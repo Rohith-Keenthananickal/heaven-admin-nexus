@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,6 +38,7 @@ import {
   X
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { PropertyAdvancedView } from "@/components/PropertyAdvancedView"
 
 const properties = [
   {
@@ -112,6 +114,14 @@ const getStatusBadge = (status: string) => {
 }
 
 export default function PropertyManagement() {
+  const [selectedProperty, setSelectedProperty] = useState<any>(null)
+  const [isAdvancedViewOpen, setIsAdvancedViewOpen] = useState(false)
+
+  const handleViewDetails = (property: any) => {
+    setSelectedProperty(property)
+    setIsAdvancedViewOpen(true)
+  }
+
   return (
     <DashboardLayout
       title="Property Management"
@@ -226,7 +236,7 @@ export default function PropertyManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewDetails(property)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
@@ -260,6 +270,12 @@ export default function PropertyManagement() {
           </div>
         </CardContent>
       </Card>
+
+      <PropertyAdvancedView
+        isOpen={isAdvancedViewOpen}
+        onClose={() => setIsAdvancedViewOpen(false)}
+        property={selectedProperty}
+      />
     </DashboardLayout>
   )
 }

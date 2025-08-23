@@ -39,6 +39,7 @@ const propertyItems = [
 
 const userItems = [
   { title: "User Management", url: "/users", icon: Users },
+  { title: "CRM / Guest", url: "/crm-guest", icon: UserCheck },
   { title: "Team Management", url: "/team", icon: UserCheck },
   { title: "Reviews & Reports", url: "/reviews", icon: Star },
 ]
@@ -57,7 +58,7 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-primary text-primary-foreground font-medium" : "hover:bg-accent"
+    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"
 
   return (
     <Sidebar
