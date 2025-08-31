@@ -11,7 +11,7 @@ export function DashboardLayout({ children, title, action }: DashboardLayoutProp
     <div className="min-h-screen flex w-full">
       <AppSidebar />
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ml-64">
         {/* Page Header */}
         <header className="h-16 border-b bg-background flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
@@ -26,7 +26,7 @@ export function DashboardLayout({ children, title, action }: DashboardLayoutProp
         </header>
         
         {/* Main Content */}
-        <main className="flex-1 p-6 bg-muted/30">
+        <main className="flex-1 p-6 bg-muted/30 overflow-y-auto">
           {children}
         </main>
       </div>

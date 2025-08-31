@@ -61,7 +61,7 @@ const navigationItems = [
 
 export function AppSidebar() {
   return (
-    <aside className="h-screen bg-white shadow-lg overflow-y-auto flex flex-col w-64">
+    <aside className="fixed left-0 top-0 h-screen bg-white shadow-lg flex flex-col w-64 z-50">
       {/* Logo */}
       <div className="flex items-center justify-center h-16 border-b">
         <h1 className="text-xl font-bold text-blue-600">
