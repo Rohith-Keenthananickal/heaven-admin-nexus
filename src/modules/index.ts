@@ -4,6 +4,7 @@ export * from './dashboard';
 export * from './properties';
 export * from './guests';
 export * from './hosts';
+export * from './atp';
 export * from './shared';
 
 // Re-export API service for easy access

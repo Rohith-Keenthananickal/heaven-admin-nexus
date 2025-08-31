@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/modules/shared/components/ui/sonner";
 import { TooltipProvider } from "@/modules/shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Dashboard, SignIn, PropertyManagement, CrmGuest, NotFound,HostsListing } from "@/modules";
+import { Dashboard, SignIn, PropertyManagement, CrmGuest, NotFound, HostsListing, AtpDashboard, AreaCoordinators } from "@/modules";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +19,8 @@ const App = () => (
           <Route path="/properties" element={<PropertyManagement />} />
           <Route path="/crm-guest" element={<CrmGuest />} />
           <Route path="/hosts" element={<HostsListing />} />
+          <Route path="/atp-dashboard" element={<AtpDashboard />} />
+          <Route path="/area-coordinators" element={<AreaCoordinators />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
