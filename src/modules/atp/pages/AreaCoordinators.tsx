@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { DashboardLayout } from "@/modules/dashboard/components/DashboardLayout"
 import { Button } from "@/modules/shared/components/ui/button"
 import { Input } from "@/modules/shared/components/ui/input"
@@ -131,6 +132,7 @@ const mockAtps = [
 ]
 
 export default function AreaCoordinators() {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [approvalFilter, setApprovalFilter] = useState("all")
@@ -309,11 +311,11 @@ export default function AreaCoordinators() {
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
+                         <DropdownMenuContent align="end">
+                           <DropdownMenuItem onClick={() => navigate(`/area-coordinators/${atp.id}`)}>
+                             <Eye className="w-4 h-4 mr-2" />
+                             View Details
+                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit ATP
