@@ -37,6 +37,13 @@ const navigationItems = [
     ]
   },
   {
+    category: "ATP",
+    items: [
+      { name: "Dashboard", href: "/atp-dashboard", icon: LayoutDashboard },
+      { name: "Area Coordinators", href: "/area-coordinators", icon: Users },
+    ]
+  },
+  {
     category: "Property",
     items: [
       { name: "Property Management", href: "/properties", icon: Building2 },
