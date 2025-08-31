@@ -225,7 +225,6 @@ export default function AreaCoordinators() {
                   <TableHead>Status</TableHead>
                   <TableHead>Approval</TableHead>
                   <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -246,7 +245,7 @@ export default function AreaCoordinators() {
                   </TableRow>
                 ) : (
                   filteredAtps.map((atp) => (
-                    <TableRow key={atp.id}>
+                    <TableRow key={atp.id} >
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
@@ -256,7 +255,7 @@ export default function AreaCoordinators() {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{atp.full_name}</div>
+                            <div className="font-medium cursor-pointer" onClick={() => navigate(`/area-coordinators/${atp.id}`)}>{atp.full_name}</div>
                             <div className="text-sm text-muted-foreground">ID: {atp.id}</div>
                           </div>
                         </div>
@@ -292,28 +291,7 @@ export default function AreaCoordinators() {
                           {new Date(atp.created_at).toLocaleDateString()}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end">
-                             <DropdownMenuItem onClick={() => navigate(`/area-coordinators/${atp.id}`)}>
-                               <Eye className="h-4 w-4 mr-2" />
-                               View Details
-                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit ATP
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              Suspend Account
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                     
                     </TableRow>
                   ))
                 )}

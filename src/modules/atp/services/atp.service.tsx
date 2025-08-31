@@ -10,6 +10,11 @@ class AtpService {
         const response = await api.post(`${baseUrl}/api/v1/users/search`, payload);
         return response.data;
     }
+
+    async getAreaCoordinatorById(id : string) : Promise<ApiResponse<User>> {
+        const response = await api.get(`${baseUrl}/api/v1/users/${id}`);
+        return response.data;
+    }
 }
 
 export default new AtpService();
