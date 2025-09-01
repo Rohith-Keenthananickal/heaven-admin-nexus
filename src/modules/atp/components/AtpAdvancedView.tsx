@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { DashboardLayout } from "@/modules/dashboard/components/DashboardLayout"
 import { Button } from "@/modules/shared/components/ui/button"
@@ -35,9 +35,13 @@ import {
   Eye,
   Loader2
 } from "lucide-react"
+import { Textarea } from "@/modules/shared/components/ui/textarea"
+import { Label } from "@/modules/shared/components/ui/label"
 import { useToast } from "@/modules/shared/hooks/use-toast"
 import AtpService from "../services/atp.service"
 import { User } from "@/modules/auth/models/auth.models"
+import { UpdateApprovalStatusPayload, UpdateUserStatusPayload } from "../models/atp.models"
+import { ConfirmationModal } from "@/modules/shared/components/ConfirmationModal"
 
 // Mock data for sections that don't have API endpoints yet
 const mockHostsOnboarded = [
@@ -68,15 +72,14 @@ export default function AtpAdvancedView() {
   const [atp, setAtp] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showApproveModal, setShowApproveModal] = useState(false)
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [showBlockModal, setShowBlockModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState("")
 
-  // Fetch ATP data on component mount
-  useEffect(() => {
-    if (id) {
-      fetchAreaCoordinator()
-    }
-  }, [id])
-
-  const fetchAreaCoordinator = async () => {
+  const fetchAreaCoordinator = useCallback(async () => {
     if (!id) return
     
     try {
@@ -96,7 +99,14 @@ export default function AtpAdvancedView() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  // Fetch ATP data on component mount
+  useEffect(() => {
+    if (id) {
+      fetchAreaCoordinator()
+    }
+  }, [id, fetchAreaCoordinator])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -127,34 +137,190 @@ export default function AtpAdvancedView() {
   }
 
   const handleApprove = () => {
-    toast({
-      title: "ATP Approved",
-      description: "Area coordinator has been approved successfully.",
-    })
+    setShowApproveModal(true)
   }
 
   const handleReject = () => {
-    toast({
-      title: "ATP Rejected",
-      description: "Area coordinator application has been rejected.",
-      variant: "destructive",
-    })
+    setShowRejectModal(true)
+  }
+
+  const confirmApprove = async () => {
+    if (!id || !atp) return
+
+    try {
+      setIsUpdating(true)
+      
+      const payload: UpdateApprovalStatusPayload = {
+        approval_status: 'APPROVED',
+        rejection_reason: ''
+      }
+
+      const response = await AtpService.updateApprovalStatus(id, payload)
+      
+      if (response.status) {
+        // Fetch updated user details after successful status update
+        await fetchAreaCoordinator()
+        setShowApproveModal(false)
+        toast({
+          title: "ATP Approved",
+          description: "Area coordinator has been approved successfully.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: response.errMessage || "Failed to approve area coordinator.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error("Error approving area coordinator:", err)
+      toast({
+        title: "Error",
+        description: "An error occurred while approving the area coordinator.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const confirmReject = async () => {
+    if (!id || !atp) return
+
+    if (!rejectionReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for rejection.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsUpdating(true)
+      
+      const payload: UpdateApprovalStatusPayload = {
+        approval_status: 'REJECTED',
+        rejection_reason: rejectionReason.trim()
+      }
+
+      const response = await AtpService.updateApprovalStatus(id, payload)
+      
+      if (response.status) {
+        // Fetch updated user details after successful status update
+        await fetchAreaCoordinator()
+        setShowRejectModal(false)
+        setRejectionReason("")
+        toast({
+          title: "ATP Rejected",
+          description: "Area coordinator application has been rejected.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: response.errMessage || "Failed to reject area coordinator.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error("Error rejecting area coordinator:", err)
+      toast({
+        title: "Error",
+        description: "An error occurred while rejecting the area coordinator.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   const handleBlock = () => {
-    toast({
-      title: "ATP Blocked",
-      description: "Area coordinator has been blocked.",
-      variant: "destructive",
-    })
+    setShowBlockModal(true)
   }
 
   const handleDelete = () => {
-    toast({
-      title: "ATP Deleted",
-      description: "Area coordinator has been deleted permanently.",
-      variant: "destructive",
-    })
+    setShowDeleteModal(true)
+  }
+
+  const confirmBlock = async () => {
+    if (!id || !atp) return
+
+    try {
+      setIsUpdating(true)
+      
+      const payload: UpdateUserStatusPayload = {
+        status: 'BLOCKED'
+      }
+
+      const response = await AtpService.updateUserStatus(id, payload)
+      
+      if (response.status) {
+        // Fetch updated user details after successful status update
+        await fetchAreaCoordinator()
+        setShowBlockModal(false)
+        toast({
+          title: "ATP Blocked",
+          description: "Area coordinator has been blocked successfully.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: response.errMessage || "Failed to block area coordinator.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error("Error blocking area coordinator:", err)
+      toast({
+        title: "Error",
+        description: "An error occurred while blocking the area coordinator.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!id || !atp) return
+
+    try {
+      setIsUpdating(true)
+      
+      const payload: UpdateUserStatusPayload = {
+        status: 'DELETED'
+      }
+
+      const response = await AtpService.updateUserStatus(id, payload)
+      
+      if (response.status) {
+        // Fetch updated user details after successful status update
+        await fetchAreaCoordinator()
+        setShowDeleteModal(false)
+        toast({
+          title: "ATP Deleted",
+          description: "Area coordinator has been deleted successfully.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: response.errMessage || "Failed to delete area coordinator.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error("Error deleting area coordinator:", err)
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the area coordinator.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   // Loading state
@@ -197,7 +363,7 @@ export default function AtpAdvancedView() {
 
   return (
     <DashboardLayout 
-      title={`ATP Details - ${atp.full_name}`}
+      title={`ATP Details - ${atp.full_name || 'Unknown User'}`}
       action={
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate("/area-coordinators")}>
@@ -236,15 +402,15 @@ export default function AtpAdvancedView() {
         <CardContent className="p-6">
           <div className="flex items-start gap-6">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={atp.profile_image} alt={atp.full_name} />
+              <AvatarImage src={atp.profile_image} alt={atp.full_name || 'User'} />
               <AvatarFallback className="text-xl">
-                {atp.full_name.split(' ').map(n => n[0]).join('')}
+                {atp.full_name ? atp.full_name.split(' ').map(n => n[0]).join('') : 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-2xl font-bold">{atp.full_name}</h2>
+                  <h2 className="text-2xl font-bold">{atp.full_name || 'Unknown User'}</h2>
                   <p className="text-sm text-muted-foreground">ID: {atp.id}</p>
                   <div className="flex gap-4 mt-2">
                     {getStatusBadge(atp.status)}
@@ -581,6 +747,91 @@ export default function AtpAdvancedView() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Confirmation Modals */}
+      <ConfirmationModal
+        isOpen={showApproveModal}
+        onClose={() => setShowApproveModal(false)}
+        onConfirm={confirmApprove}
+        title="Approve Area Coordinator"
+        description={`Are you sure you want to approve ${atp?.full_name || 'this user'}? This action will change their approval status to approved.`}
+        confirmText="Approve"
+        cancelText="Cancel"
+        confirmVariant="default"
+        cancelVariant="outline"
+        isLoading={isUpdating}
+        icon={<Check className="w-8 h-8 text-success mx-auto" />}
+        size="md"
+      />
+
+      <ConfirmationModal
+        isOpen={showRejectModal}
+        onClose={() => {
+          setShowRejectModal(false)
+          setRejectionReason("")
+        }}
+        onConfirm={confirmReject}
+        title="Reject Area Coordinator"
+        description={`Please provide a reason for rejecting ${atp?.full_name || 'this user'}. This action will change their approval status to rejected and they will not be able to access the platform.`}
+        confirmText="Reject"
+        cancelText="Cancel"
+        confirmVariant="destructive"
+        cancelVariant="outline"
+        isLoading={isUpdating}
+        icon={<X className="w-8 h-8 text-destructive mx-auto" />}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="rejection-reason" className="text-sm font-medium">
+              Rejection Reason *
+            </Label>
+            <Textarea
+              id="rejection-reason"
+              placeholder="Please provide a detailed reason for rejection..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="mt-2 min-h-[100px]"
+              disabled={isUpdating}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              This reason will be visible to the area coordinator.
+            </p>
+          </div>
+        </div>
+      </ConfirmationModal>
+
+      {/* Block Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        onConfirm={confirmBlock}
+        title="Block Area Coordinator"
+        description={`Are you sure you want to block ${atp?.full_name || 'this user'}? This action will prevent them from accessing the platform and all their activities will be suspended.`}
+        confirmText="Block"
+        cancelText="Cancel"
+        confirmVariant="destructive"
+        cancelVariant="outline"
+        isLoading={isUpdating}
+        icon={<Ban className="w-8 h-8 text-destructive mx-auto" />}
+        size="md"
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Area Coordinator"
+        description={`Are you sure you want to delete ${atp?.full_name || 'this user'}? This action is permanent and cannot be undone. All their data and associated records will be removed from the system.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="destructive"
+        cancelVariant="outline"
+        isLoading={isUpdating}
+        icon={<Trash2 className="w-8 h-8 text-destructive mx-auto" />}
+        size="md"
+      />
     </DashboardLayout>
   )
 }

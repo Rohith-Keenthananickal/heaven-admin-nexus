@@ -12,3 +12,13 @@ export class GetAllAreaCoordinatorsPayload {
     from_date: number
     to_date: number
   }
+
+  export class UpdateApprovalStatusPayload {
+    approval_status: 'PENDING' | 'APPROVED' | 'REJECTED'
+    rejection_reason: string
+  }
+
+  export class UpdateUserStatusPayload {
+    status: 'ACTIVE' | 'BLOCKED' | 'DELETED'
+  }
+  

@@ -154,16 +154,16 @@ export default function AreaCoordinators() {
   return (
     <DashboardLayout 
       title="Area Coordinators" 
-      action={
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add New ATP
-        </Button>
-      }
+      // action={
+      //   <Button>
+      //     <Plus className="w-4 h-4 mr-2" />
+      //     Add New ATP
+      //   </Button>
+      // }
     >
       <Card>
         <CardHeader>
-          <CardTitle>Area Coordinators</CardTitle>
+          {/* <CardTitle>Area Coordinators</CardTitle> */}
           <p className="text-sm text-muted-foreground">
             Manage all area coordinators from one place.
           </p>
