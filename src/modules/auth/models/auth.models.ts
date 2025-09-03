@@ -15,6 +15,7 @@ export interface LoginResponse {
     user_id: number
     user_type: string
     full_name: string
+    user: User
   }
 
 

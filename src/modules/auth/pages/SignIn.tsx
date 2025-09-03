@@ -34,24 +34,10 @@ export default function SignIn() {
   const handleLogin = async (formData: LoginPayload) => {
     try {
       const response = await authService.login(formData)
-      if (response.status) {
+      if (response.data) {
         toast.success("Login successful")
-        localStorage.setItem("token", response.data.access_token)
-        
-        // Get user details and combine with login response
-        const userResponse = await authService.getUserById(response.data.user_id)
-        if (userResponse.status) {
-          // Combine both responses
-          const combinedUserData = {
-            ...response.data,        // Login response (tokens, user_id, etc.)
-            ...userResponse.data     // User details (name, email, profile info, etc.)
-          }
-          localStorage.setItem("user", JSON.stringify(combinedUserData))
-        } else {
-          // If user details fetch fails, store only login response
-          localStorage.setItem("user", JSON.stringify(response.data))
-        }
-        
+        localStorage.setItem("heaven_connect_user", JSON.stringify(response?.data?.user))
+        localStorage.setItem("heaven_connect_token", JSON.stringify(response?.data?.access_token))    
         navigate("/")
       } else {
         toast.error("Login failed")

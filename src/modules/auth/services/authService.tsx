@@ -3,7 +3,7 @@ import { LoginPayload, User } from "../models/auth.models";
 import { api } from "@/modules/shared";
 import { ApiResponse } from "@/modules/shared/models/api.models";
 import { LoginResponse } from "../models/auth.models";
-import { CURRENT_USER } from "@/modules/shared/models/common-models";
+import { CURRENT_TOKEN, CURRENT_USER } from "@/modules/shared/models/common-models";
 
 class AuthService {
     async login(payload: LoginPayload) : Promise<ApiResponse<LoginResponse>> {
@@ -30,6 +30,11 @@ class AuthService {
     async getUserById(id: number): Promise<ApiResponse<User>> {
         const response = await api.get(`${baseUrl}/api/v1/user/${id}`);
         return response.data;
+    }
+
+    getCurrentToken(): string | null {
+        const token = localStorage.getItem(CURRENT_TOKEN);
+        return token ? JSON.parse(token) : null;
     }
 }
 export const authService = new AuthService();
