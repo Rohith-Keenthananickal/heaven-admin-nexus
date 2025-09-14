@@ -12,3 +12,6 @@ export { api } from './shared';
 
 // Re-export hosts components for easy access
 export { HostsListing, HostAdvancedView } from './hosts';
+
+// Re-export atp components for easy access
+export { CreateTrainingModule } from './atp';

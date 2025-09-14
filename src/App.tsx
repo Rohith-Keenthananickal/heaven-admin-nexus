@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/modules/shared/components/ui/sonner";
 import { TooltipProvider } from "@/modules/shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Dashboard, SignIn, PropertyManagement, CrmGuest, NotFound, HostsListing, AtpDashboard, AreaCoordinators, TrainingModules, AtpAdvancedView } from "@/modules";
+import { Dashboard, SignIn, PropertyManagement, CrmGuest, NotFound, HostsListing, AtpDashboard, AreaCoordinators, TrainingModules, CreateTrainingModule, AtpAdvancedView } from "@/modules";
 import { authService } from "@/modules/auth/services/authService";
 
 const queryClient = new QueryClient();
@@ -88,6 +88,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <TrainingModules />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/training-modules/create" 
+            element={
+              <ProtectedRoute>
+                <CreateTrainingModule />
               </ProtectedRoute>
             } 
           />

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
-import { Eye, Search, Filter, Clock, Play, FileText, Image } from "lucide-react"
+import { Eye, Search, Filter, Clock, Play, FileText, Image, Plus } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import defaultThumbnail from "@/assets/training-module-default.jpg"
 import { Input } from "@/modules/shared/components/ui/input"
 import { Button } from "@/modules/shared/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/modules/shared/components/ui/card"
@@ -74,6 +76,7 @@ const mockTrainingModules: TrainingModule[] = [
 ]
 
 export default function TrainingModules() {
+  const navigate = useNavigate()
   const [modules, setModules] = useState<TrainingModule[]>([])
   const [filteredModules, setFilteredModules] = useState<TrainingModule[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -155,6 +158,10 @@ export default function TrainingModules() {
           <h1 className="text-3xl font-bold text-gray-900">Training Modules</h1>
           <p className="text-gray-600 mt-2">Manage and organize training content for area coordinators</p>
         </div>
+        <Button onClick={() => navigate('/training-modules/create')} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Create New Module
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -244,14 +251,21 @@ export default function TrainingModules() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredModules.map((module) => (
-            <Card key={module.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{module.title}</CardTitle>
+            <Card key={module.id} className="hover:shadow-md transition-shadow overflow-hidden">
+              <div className="relative h-48 bg-gray-100">
+                <img 
+                  src={module.contents.find(c => c.thumbnail_url)?.thumbnail_url || defaultThumbnail}
+                  alt={module.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-2 right-2">
                   <Badge variant={module.is_active ? "default" : "secondary"}>
                     {module.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
+              </div>
+              <CardHeader>
+                <CardTitle className="text-lg">{module.title}</CardTitle>
                 <p className="text-sm text-gray-600 line-clamp-2">{module.description}</p>
               </CardHeader>
               <CardContent>
