@@ -9,7 +9,8 @@ import {
   Settings, 
   Bell,
   User,
-  LogOut
+  LogOut,
+  FileText
 } from "lucide-react"
 
 import {
@@ -41,6 +42,7 @@ const navigationItems = [
     items: [
       { name: "Dashboard", href: "/atp-dashboard", icon: LayoutDashboard },
       { name: "Area Coordinators", href: "/area-coordinators", icon: Users },
+      { name: "Training Modules", href: "/training-modules", icon: FileText },
     ]
   },
   {

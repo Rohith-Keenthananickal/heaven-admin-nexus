@@ -70,8 +70,8 @@ export default function AreaCoordinators() {
         // Handle both array and paginated response
         if (Array.isArray(response.data)) {
           setAtps(response.data)
-        } else if (response.data.list && Array.isArray(response.data.list)) {
-          setAtps(response.data.list)
+        } else if (response.data && Array.isArray(response.data)) {
+          setAtps(response.data)
         } else {
           setAtps([])
         }
