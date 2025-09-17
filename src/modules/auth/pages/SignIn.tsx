@@ -5,7 +5,7 @@ import { Input } from "@/modules/shared/components/ui/input"
 import { Label } from "@/modules/shared/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/modules/shared/components/ui/card"
 import { Checkbox } from "@/modules/shared/components/ui/checkbox"
-import { Eye, EyeOff, Shield } from "lucide-react"
+import { Eye, EyeOff, Shield, Users, BarChart3, Settings, Mail, Lock } from "lucide-react"
 import { authService } from "../services/authService"
 import { LoginPayload } from "../models/auth.models"
 import { toast } from "sonner"
@@ -49,92 +49,143 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/20">
-      <div className="w-full max-w-md">
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="text-center pb-8">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Shield className="h-8 w-8 text-primary" />
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left Panel - Sign In Form */}
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-6">
+              <img 
+                src="/favicon.png" 
+                alt="Heaven Connect" 
+                className="w-24 mr-3"
+              />
+              <span className="text-2xl font-bold text-black">Heaven Connect</span>
             </div>
-            <CardTitle className="text-2xl font-bold">Heaven Connect Admin</CardTitle>
-            <p className="text-muted-foreground">Sign in to your admin account</p>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+            <h1 className="text-3xl font-bold text-black mb-2">Admin Sign In</h1>
+            <p className="text-gray-600">Welcome back! Please enter your credentials.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@heavenconnect.com"
+                  placeholder="you@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
+                  className="pl-10 h-12 rounded-lg border-gray-300 focus:border-primary focus:ring-primary"
                   required
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember"
-                    checked={formData.remember}
-                    onCheckedChange={(checked) => 
-                      setFormData(prev => ({...prev, remember: checked as boolean}))
-                    }
-                  />
-                  <Label htmlFor="remember" className="text-sm">Remember me</Label>
-                </div>
-                <Link 
-                  to="/forgot-password" 
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              
-              <Button type="submit" className="w-full">
-                Sign In
-              </Button>
-            </form>
-            
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                Need help? {" "}
-                <Link to="/support" className="text-primary hover:underline">
-                  Contact Support
-                </Link>
-              </p>
             </div>
-          </CardContent>
-        </Card>
+            
+            {/* Password Field */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
+                  className="pl-10 pr-10 h-12 rounded-lg border-gray-300 focus:border-primary focus:ring-primary"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Remember me and Forgot password */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="remember"
+                  checked={formData.remember}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({...prev, remember: checked as boolean}))
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="remember" className="text-sm text-gray-700">Remember me</Label>
+              </div>
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-primary hover:underline font-medium"
+              >
+                Forgot your password?
+              </Link>
+            </div>
+            
+            {/* Sign In Button */}
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              Sign In
+            </Button>
+          </form>
+          
+          {/* Sign Up Link */}
+          <div className="text-center mt-8">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-primary hover:underline font-medium">
+                Sign Up
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Promotional Section */}
+      <div className="flex-1 relative bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center p-8 hidden lg:flex">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}></div>
+        
+        <div className="relative z-10 text-center text-white max-w-md">
+          <h2 className="text-4xl font-bold mb-6">Powerful Admin Panel</h2>
+          <p className="text-lg mb-12 text-white/90 leading-relaxed">
+            Manage your Heaven Connect platform with ease. Access insightful analytics, user data, and system controls all in one place.
+          </p>
+          
+          {/* Feature Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200">
+              <Users className="h-8 w-8 mx-auto mb-2 text-white" />
+              <span className="text-sm font-medium text-white">Users</span>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200">
+              <BarChart3 className="h-8 w-8 mx-auto mb-2 text-white" />
+              <span className="text-sm font-medium text-white">Analytics</span>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200">
+              <Settings className="h-8 w-8 mx-auto mb-2 text-white" />
+              <span className="text-sm font-medium text-white">Settings</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
