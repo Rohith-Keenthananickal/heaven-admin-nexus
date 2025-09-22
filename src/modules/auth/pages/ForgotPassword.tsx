@@ -36,17 +36,18 @@ export default function ForgotPassword() {
       <Card className="w-full max-w-md border-0 shadow-xl">
         <CardContent className="p-8">
           {/* Branding Section */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
+          <div className="text-center">
+            <div className="flex items-center justify-center">
               <img 
                 src="/favicon.png" 
                 alt="Heaven Connect" 
-                className="w-24 mr-3"
+                className="mr-3"
+                width={'300px'}
               />
-              <div className="text-left">
+              {/* <div className="text-left">
                 <h1 className="text-xl font-bold text-gray-800">Heaven Connect</h1>
                 <p className="text-sm text-gray-500">Admin Panel</p>
-              </div>
+              </div> */}
             </div>
           </div>
 

@@ -34,6 +34,7 @@ export default function SignIn() {
   const handleLogin = async (formData: LoginPayload) => {
     try {
       const response = await authService.login(formData)
+      console.log("Login response:", response)
       if (response.data) {
         toast.success("Login successful")
         localStorage.setItem("heaven_connect_user", JSON.stringify(response?.data?.user))
@@ -50,21 +51,22 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Left Panel - Sign In Form */}
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      {/* Left Panel - Sign In Form (50%) */}
+      <div className="flex-1 flex justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-8">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-6">
+          <div className="text-center">
+            <div className="flex items-center justify-center">
               <img 
                 src="/favicon.png" 
                 alt="Heaven Connect" 
-                className="w-24 mr-3"
+                className="mr-3"
+                width={'300px'}
               />
-              <span className="text-2xl font-bold text-black">Heaven Connect</span>
+              {/* <span className="text-2xl font-bold text-black">Heaven Connect</span> */}
             </div>
             <h1 className="text-3xl font-bold text-black mb-2">Admin Sign In</h1>
-            <p className="text-gray-600">Welcome back! Please enter your credentials.</p>
+            <p className="text-gray-600 mb-5">Welcome back! Please enter your credentials.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -157,35 +159,18 @@ export default function SignIn() {
         </div>
       </div>
 
-      {/* Right Panel - Promotional Section */}
-      <div className="flex-1 relative bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center p-8 hidden lg:flex">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-20" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+      {/* Right Panel - Sunset Image (50%) */}
+      <div className="flex-1 relative hidden lg:flex">
+        {/* Sunset Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('/sunset.jpg')`
+          }}
+        ></div>
         
-        <div className="relative z-10 text-center text-white max-w-md">
-          <h2 className="text-4xl font-bold mb-6">Powerful Admin Panel</h2>
-          <p className="text-lg mb-12 text-white/90 leading-relaxed">
-            Manage your Heaven Connect platform with ease. Access insightful analytics, user data, and system controls all in one place.
-          </p>
-          
-          {/* Feature Cards */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200">
-              <Users className="h-8 w-8 mx-auto mb-2 text-white" />
-              <span className="text-sm font-medium text-white">Users</span>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200">
-              <BarChart3 className="h-8 w-8 mx-auto mb-2 text-white" />
-              <span className="text-sm font-medium text-white">Analytics</span>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200">
-              <Settings className="h-8 w-8 mx-auto mb-2 text-white" />
-              <span className="text-sm font-medium text-white">Settings</span>
-            </div>
-          </div>
-        </div>
+        {/* Optional overlay for better text readability if needed */}
+        <div className="absolute inset-0 bg-black/20"></div>
       </div>
     </div>
   )

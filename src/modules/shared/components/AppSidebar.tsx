@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom"
+import { NavLink, useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
 import { cn } from "@/modules/shared/lib/utils"
 import { 
   LayoutDashboard, 
@@ -9,7 +10,9 @@ import {
   Settings, 
   Bell,
   User,
-  LogOut
+  LogOut,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
 
 import {
@@ -28,42 +31,90 @@ import {
 } from "@/modules/shared/components/ui/dropdown-menu"
 import { Button } from "@/modules/shared/components/ui/button"
 
-// Navigation items grouped by category
+// Navigation items with main categories as expandable items
 const navigationItems = [
-  {
-    category: "Main",
-    items: [
-      { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { 
+    name: "Dashboard", 
+    href: "/", 
+    icon: LayoutDashboard 
+  },
+  { 
+    name: "ATP", 
+    icon: Users,
+    submenu: [
+      { name: "Dashboard", href: "/atp-dashboard" },
+      { name: "Area Coordinators", href: "/area-coordinators" }
     ]
   },
-  {
-    category: "ATP",
-    items: [
-      { name: "Dashboard", href: "/atp-dashboard", icon: LayoutDashboard },
-      { name: "Area Coordinators", href: "/area-coordinators", icon: Users },
+  { 
+    name: "Property", 
+    icon: Building2,
+    submenu: [
+      { name: "Property Management", href: "/properties" },
+      { name: "Services & Experiences", href: "/services" }
     ]
   },
-  {
-    category: "Property",
-    items: [
-      { name: "Property Management", href: "/properties", icon: Building2 },
-      { name: "Services & Experiences", href: "/services", icon: MapPin },
+  { 
+    name: "User Management", 
+    icon: UserCheck,
+    submenu: [
+      { name: "Hosts Management", href: "/hosts" },
+      { name: "CRM / Guest", href: "/crm-guest" }
     ]
   },
-  {
-    category: "User Management",
-    items: [
-      { name: "Hosts Management", href: "/hosts", icon: Users },
-      { name: "CRM / Guest", href: "/crm-guest", icon: UserCheck },
-    ]
+  { 
+    name: "Settings", 
+    href: "/settings", 
+    icon: Settings 
   }
 ]
 
 export function AppSidebar() {
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const navigate = useNavigate()
+
+  // Load expanded state from localStorage on component mount
+  useEffect(() => {
+    const savedExpanded = localStorage.getItem('sidebar-expanded-items')
+    if (savedExpanded) {
+      try {
+        const parsed = JSON.parse(savedExpanded)
+        setExpandedItems(new Set(parsed))
+      } catch (error) {
+        console.error('Error parsing saved expanded items:', error)
+      }
+    }
+  }, [])
+
+  // Save expanded state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('sidebar-expanded-items', JSON.stringify(Array.from(expandedItems)))
+  }, [expandedItems])
+
+  const toggleExpanded = (itemName: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(itemName)) {
+        newSet.delete(itemName)
+      } else {
+        newSet.add(itemName)
+      }
+      return newSet
+    })
+  }
+
+  const handleLogout = () => {
+    // Clear all localStorage data
+    localStorage.clear()
+    
+    // Redirect to signin page
+    navigate('/signin')
+  }
+
   return (
-    <aside className="fixed left-0 top-0 h-screen bg-white shadow-lg flex flex-col w-64 z-50">
+    <aside className="fixed left-0 top-0 h-screen bg-white shadow-lg flex flex-col w-64 z-50 border-r border-gray-200">
       {/* Logo */}
-      <div className="flex items-center justify-center h-16 border-b">
+      <div className="flex items-center justify-center h-16 border-b border-gray-200">
         <h1 className="text-xl font-bold text-blue-600">
           Heaven Connect
         </h1>
@@ -71,54 +122,67 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="p-4 flex-1 overflow-y-auto">
-        {navigationItems.map((group, index) => (
-          <div key={index} className="mb-6">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              {group.category}
-            </h2>
-            <ul className="space-y-1">
-              {group.items.map((item) => (
-                <li key={item.name}>
-                  <NavLink
-                    to={item.href}
-                    className={({ isActive }) => cn(
-                      "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
-                      isActive ? 
-                        "bg-blue-50 text-blue-600 font-medium" : 
-                        "text-gray-700 hover:bg-gray-100"
+        <ul className="space-y-1">
+          {navigationItems.map((item) => (
+            <li key={item.name}>
+              {item.submenu ? (
+                <>
+                  <button
+                    onClick={() => toggleExpanded(item.name)}
+                    className={cn(
+                      "flex items-center justify-between w-full px-3 py-2 text-sm rounded-md transition-colors text-left",
+                      "text-gray-700 hover:bg-gray-100"
                     )}
                   >
-                    <item.icon className="w-5 h-5 mr-3" />
-                    {item.name}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-
-        {/* Settings */}
-        <div className="mb-6">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            System
-          </h2>
-          <ul className="space-y-1">
-            <li>
-              <NavLink
-                to="/settings"
-                className={({ isActive }) => cn(
-                  "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
-                  isActive ? 
-                    "bg-blue-50 text-blue-600 font-medium" : 
-                    "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <Settings className="w-5 h-5 mr-3" />
-                Settings
-              </NavLink>
+                    <div className="flex items-center">
+                      <item.icon className="w-5 h-5 mr-3" />
+                      {item.name}
+                    </div>
+                    {expandedItems.has(item.name) ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </button>
+                  {expandedItems.has(item.name) && (
+                    <ul className="ml-6 mt-1 space-y-1" onClick={(e) => e.stopPropagation()}>
+                      {item.submenu.map((subItem) => (
+                        <li key={subItem.name}>
+                          <NavLink
+                            to={subItem.href}
+                            onClick={(e) => e.stopPropagation()}
+                            className={({ isActive }) => cn(
+                              "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
+                              isActive ? 
+                                "bg-blue-50 text-blue-600 font-medium" : 
+                                "text-gray-600 hover:bg-gray-50"
+                            )}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-gray-400 mr-3" />
+                            {subItem.name}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : (
+                <NavLink
+                  to={item.href}
+                  className={({ isActive }) => cn(
+                    "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
+                    isActive ? 
+                      "bg-blue-50 text-blue-600 font-medium" : 
+                      "text-gray-700 hover:bg-gray-100"
+                  )}
+                >
+                  <item.icon className="w-5 h-5 mr-3" />
+                  {item.name}
+                </NavLink>
+              )}
             </li>
-          </ul>
-        </div>
+          ))}
+        </ul>
       </nav>
       
       {/* User profile and notifications section at bottom */}
@@ -158,7 +222,10 @@ export function AppSidebar() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem 
+              className="text-red-600 cursor-pointer"
+              onClick={handleLogout}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Logout</span>
             </DropdownMenuItem>
