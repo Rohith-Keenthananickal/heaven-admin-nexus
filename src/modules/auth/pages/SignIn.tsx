@@ -5,7 +5,7 @@ import { Input } from "@/modules/shared/components/ui/input"
 import { Label } from "@/modules/shared/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/modules/shared/components/ui/card"
 import { Checkbox } from "@/modules/shared/components/ui/checkbox"
-import { Eye, EyeOff, Shield } from "lucide-react"
+import { Eye, EyeOff, Shield, Users, BarChart3, Settings, Mail, Lock } from "lucide-react"
 import { authService } from "../services/authService"
 import { LoginPayload } from "../models/auth.models"
 import { toast } from "sonner"
@@ -34,6 +34,7 @@ export default function SignIn() {
   const handleLogin = async (formData: LoginPayload) => {
     try {
       const response = await authService.login(formData)
+      console.log("Login response:", response)
       if (response.data) {
         toast.success("Login successful")
         localStorage.setItem("heaven_connect_user", JSON.stringify(response?.data?.user))
@@ -49,92 +50,127 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/20">
-      <div className="w-full max-w-md">
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="text-center pb-8">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Shield className="h-8 w-8 text-primary" />
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left Panel - Sign In Form (50%) */}
+      <div className="flex-1 flex justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="text-center">
+            <div className="flex items-center justify-center">
+              <img 
+                src="/favicon.png" 
+                alt="Heaven Connect" 
+                className="mr-3"
+                width={'300px'}
+              />
+              {/* <span className="text-2xl font-bold text-black">Heaven Connect</span> */}
             </div>
-            <CardTitle className="text-2xl font-bold">Heaven Connect Admin</CardTitle>
-            <p className="text-muted-foreground">Sign in to your admin account</p>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+            <h1 className="text-3xl font-bold text-black mb-2">Admin Sign In</h1>
+            <p className="text-gray-600 mb-5">Welcome back! Please enter your credentials.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@heavenconnect.com"
+                  placeholder="you@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
+                  className="pl-10 h-12 rounded-lg border-gray-300 focus:border-primary focus:ring-primary"
                   required
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember"
-                    checked={formData.remember}
-                    onCheckedChange={(checked) => 
-                      setFormData(prev => ({...prev, remember: checked as boolean}))
-                    }
-                  />
-                  <Label htmlFor="remember" className="text-sm">Remember me</Label>
-                </div>
-                <Link 
-                  to="/forgot-password" 
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              
-              <Button type="submit" className="w-full">
-                Sign In
-              </Button>
-            </form>
-            
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                Need help? {" "}
-                <Link to="/support" className="text-primary hover:underline">
-                  Contact Support
-                </Link>
-              </p>
             </div>
-          </CardContent>
-        </Card>
+            
+            {/* Password Field */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({...prev, password: e.target.value}))}
+                  className="pl-10 pr-10 h-12 rounded-lg border-gray-300 focus:border-primary focus:ring-primary"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Remember me and Forgot password */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="remember"
+                  checked={formData.remember}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({...prev, remember: checked as boolean}))
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="remember" className="text-sm text-gray-700">Remember me</Label>
+              </div>
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-primary hover:underline font-medium"
+              >
+                Forgot your password?
+              </Link>
+            </div>
+            
+            {/* Sign In Button */}
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              Sign In
+            </Button>
+          </form>
+          
+          {/* Sign Up Link */}
+          <div className="text-center mt-8">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-primary hover:underline font-medium">
+                Sign Up
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Sunset Image (50%) */}
+      <div className="flex-1 relative hidden lg:flex">
+        {/* Sunset Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('/sunset.jpg')`
+          }}
+        ></div>
+        
+        {/* Optional overlay for better text readability if needed */}
+        <div className="absolute inset-0 bg-black/20"></div>
       </div>
     </div>
   )
