@@ -9,6 +9,7 @@ import { Badge } from "@/modules/shared/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/modules/shared/components/ui/select"
 import { TrainingModule } from "../models/training.models"
 import { TrainingModuleAdvancedView } from "../components/TrainingModuleAdvancedView"
+import { DashboardLayout } from "@/modules/dashboard/components/DashboardLayout"
 
 // Mock data for now
 const mockTrainingModules: TrainingModule[] = [
@@ -32,7 +33,7 @@ const mockTrainingModules: TrainingModule[] = [
         content_order: 1,
         is_required: true,
         video_duration_seconds: 1200,
-        thumbnail_url: "https://example.com/thumb1",
+        thumbnail_url: "https://example.com/checklist.jpg",
         created_at: "2024-01-15T10:00:00Z",
         updated_at: "2024-01-15T10:00:00Z"
       },
@@ -144,25 +145,29 @@ export default function TrainingModules() {
 
   if (showAdvancedView && selectedModule) {
     return (
-      <TrainingModuleAdvancedView
-        module={selectedModule}
-        onBack={() => setShowAdvancedView(false)}
-      />
+      <DashboardLayout title="Training Module Details">
+        <TrainingModuleAdvancedView
+          module={selectedModule}
+          onBack={() => setShowAdvancedView(false)}
+        />
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Training Modules</h1>
-          <p className="text-gray-600 mt-2">Manage and organize training content for area coordinators</p>
-        </div>
+    <DashboardLayout 
+      title="Training Modules"
+      action={
         <Button onClick={() => navigate('/training-modules/create')} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Create New Module
         </Button>
-      </div>
+      }
+    >
+      <div className="space-y-6">
+        <div>
+          <p className="text-gray-600">Manage and organize training content for area coordinators</p>
+        </div>
 
       {/* Search and Filters */}
       <div className="flex flex-col md:flex-row gap-4">
@@ -314,6 +319,7 @@ export default function TrainingModules() {
           <p className="text-gray-600">Try adjusting your search or filters</p>
         </div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   )
 }
