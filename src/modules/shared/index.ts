@@ -2,6 +2,7 @@
 export { AppSidebar } from './components/AppSidebar';
 export { Header } from './components/Header';
 export { ConfirmationModal } from './components/ConfirmationModal';
+export { DocumentViewer } from './components/DocumentViewer';
 export { default as NotFound } from './pages/NotFound';
 
 // Re-export hooks

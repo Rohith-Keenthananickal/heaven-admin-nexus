@@ -41,7 +41,7 @@ import { useToast } from "@/modules/shared/hooks/use-toast"
 import AtpService from "../services/atp.service"
 import { User } from "@/modules/auth/models/auth.models"
 import { UpdateApprovalStatusPayload, UpdateUserStatusPayload } from "../models/atp.models"
-import { ConfirmationModal } from "@/modules/shared/components/ConfirmationModal"
+import { ConfirmationModal, DocumentViewer } from "@/modules/shared"
 
 // Mock data for sections that don't have API endpoints yet
 const mockHostsOnboarded = [
@@ -671,10 +671,16 @@ export default function AtpAdvancedView() {
                             </div>
                             <h4 className="font-bold text-lg">Passport Size Photo</h4>
                           </div>
-                          <Button variant="outline" size="sm" className="shadow-sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
-                          </Button>
+                          <DocumentViewer
+                            documentUrl={atp.area_coordinator_profile?.passport_size_photo}
+                            title="Passport Size Photo"
+                            trigger={
+                              <Button variant="outline" size="sm" className="shadow-sm">
+                                <Eye className="w-4 h-4 mr-2" />
+                                View
+                              </Button>
+                            }
+                          />
                         </div>
                         <Badge className="bg-green-100 text-green-700 border-green-200 font-semibold">
                           ✓ Verified
@@ -691,10 +697,16 @@ export default function AtpAdvancedView() {
                             </div>
                             <h4 className="font-bold text-lg">ID Proof Document</h4>
                           </div>
-                          <Button variant="outline" size="sm" className="shadow-sm">
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                          </Button>
+                          <DocumentViewer
+                            documentUrl={atp.area_coordinator_profile?.id_proof_document}
+                            title="ID Proof Document"
+                            trigger={
+                              <Button variant="outline" size="sm" className="shadow-sm">
+                                <Eye className="w-4 h-4 mr-2" />
+                                View
+                              </Button>
+                            }
+                          />
                         </div>
                         <Badge className="bg-green-100 text-green-700 border-green-200 font-semibold">
                           ✓ Verified
@@ -713,10 +725,16 @@ export default function AtpAdvancedView() {
                             </div>
                             <h4 className="font-bold text-lg">Address Proof Document</h4>
                           </div>
-                          <Button variant="outline" size="sm" className="shadow-sm">
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                          </Button>
+                          <DocumentViewer
+                            documentUrl={atp.area_coordinator_profile?.address_proof_document}
+                            title="Address Proof Document"
+                            trigger={
+                              <Button variant="outline" size="sm" className="shadow-sm">
+                                <Eye className="w-4 h-4 mr-2" />
+                                View
+                              </Button>
+                            }
+                          />
                         </div>
                         <Badge className="bg-green-100 text-green-700 border-green-200 font-semibold">
                           ✓ Verified
@@ -733,10 +751,16 @@ export default function AtpAdvancedView() {
                             </div>
                             <h4 className="font-bold text-lg">PAN Card</h4>
                           </div>
-                          <Button variant="outline" size="sm" className="shadow-sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
-                          </Button>
+                          <DocumentViewer
+                            documentUrl={atp.area_coordinator_profile?.id_proof_document}
+                            title="PAN Card"
+                            trigger={
+                              <Button variant="outline" size="sm" className="shadow-sm">
+                                <Eye className="w-4 h-4 mr-2" />
+                                View
+                              </Button>
+                            }
+                          />
                         </div>
                         <Badge className="bg-amber-100 text-amber-700 border-amber-200 font-semibold">
                           ⏳ Pending Verification
