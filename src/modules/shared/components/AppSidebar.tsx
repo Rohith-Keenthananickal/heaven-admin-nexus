@@ -13,7 +13,8 @@ import {
   LogOut,
   FileText,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  LifeBuoy
 } from "lucide-react"
 
 import {
@@ -63,6 +64,11 @@ const navigationItems = [
       { name: "Hosts Management", href: "/hosts" },
       { name: "CRM / Guest", href: "/crm-guest" }
     ]
+  },
+  { 
+    name: "Support Tickets", 
+    href: "/support-tickets", 
+    icon: LifeBuoy 
   },
   { 
     name: "Settings", 
