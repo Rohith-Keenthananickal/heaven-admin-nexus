@@ -5,46 +5,29 @@ export interface ApiResponse<T> {
     errMessage?: string;
   
   }
+
   
-  export interface HkResponse<T> {
-    data: T;
-    message?: string;
-    status?: number;
-    statusCode?: number;
-    success?: boolean;
-    errMessage?: string;
-  }
-  
-  export interface HKPaginationResponse<T> {
-    code: number;
-    message: string;
-    data: HKPaginatedWebData<T>;
-  }
   
   export interface PaginatedResponse<T> {
-    code: number;
-    message: string;
-    data: PaginatedWebData<T>;
+    status: string
+    data: T[]
+    pagination: Pagination
+  }
+
+  // export class PaginatedWebData<T> {
+  //   list: T;
+  //   recordsPerPage: number;
+  //   totalRecords: number;
+  //   page: number;
+  //   totalPages: number;
+  // }
+
+  export interface Pagination {
+    page: number
+    limit: number
+    total: number
+    total_pages: number
+    has_next: boolean
+    has_prev: boolean
   }
   
-  export class HKPaginatedWebData<T> {
-    list: T;
-    recordsPerPage: number;
-    totalRecords: number;
-    page: number;
-    totalPages: number;
-  }
-  
-  export interface HkResponse1<T> {
-    data: T;
-    message: string;
-    code: number;
-  }
-  
-  export class PaginatedWebData<T> {
-    list: T;
-    recordsPerPage: number;
-    totalRecords: number;
-    page: number;
-    totalPages: number;
-  }

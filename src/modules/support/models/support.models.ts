@@ -1,7 +1,7 @@
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type TicketStatus = 'ACTIVE' | 'INACTIVE';
 export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-export type TicketType = 'COMPLAINT' | 'INQUIRY' | 'REQUEST' | 'FEEDBACK';
+export type TicketType = 'COMPLAINT' | 'SUPPORT';
 export type Category = 'TECHNICAL_ISSUE' | 'ACCOUNT_ISSUE' | 'PAYMENT_ISSUE' | 'PROPERTY_ISSUE' | 'GUEST_COMPLAINT' | 'MAINTENANCE' | 'OTHER';
 export type UserType = 'ALL' | 'GUEST' | 'STAFF';
 
@@ -27,14 +27,6 @@ export interface SupportTicket {
   updated_at: string;
 }
 
-export interface SupportTicketActivity {
-  id: number;
-  ticket_id: number;
-  activity_type: 'STATUS_CHANGE' | 'COMMENT' | 'ASSIGNMENT' | 'ESCALATION' | 'ATTACHMENT';
-  description: string;
-  created_by_name: string;
-  created_at: string;
-}
 
 export interface SupportTicketComment {
   id: number;
@@ -52,24 +44,24 @@ export interface SupportTicketEscalation {
   created_at: string;
 }
 
-export interface SupportTicketListResponse {
-  status: string;
-  data: SupportTicket[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
-  };
-}
+// export interface SupportTicketListResponse {
+//   status: string;
+//   data: SupportTicket[];
+//   pagination: {
+//     page: number;
+//     limit: number;
+//     total: number;
+//     total_pages: number;
+//     has_next: boolean;
+//     has_prev: boolean;
+//   };
+// }
 
-export interface SupportTicketDetailResponse {
-  status: string;
-  data: SupportTicket;
-  message: string;
-}
+// export interface SupportTicketDetailResponse {
+//   status: string;
+//   data: SupportTicket;
+//   message: string;
+// }
 
 export const priorityOptions = [
   { value: 'LOW', label: 'Low' },
@@ -107,3 +99,50 @@ export const ticketTypeOptions = [
   { value: 'REQUEST', label: 'Request' },
   { value: 'FEEDBACK', label: 'Feedback' },
 ];
+
+
+export class ListSupportTicketsPayload {
+  page: number
+  limit: number
+  type: TicketType
+  status: string
+  issue_status: IssueStatus
+  priority: string
+  created_by_id: number
+  assigned_to_id: number
+  property_id: number
+  issue: string
+}
+
+export class SupportTicketActivity {
+  activity_type: ActivityType
+  description: string
+  old_value: string
+  new_value: string
+  activity_metadata: ActivityMetadata
+  id: number
+  issue_id: number
+  performed_by_id: number
+  performed_by_name: string
+  created_at: string
+}
+
+export enum ActivityType {
+  CREATED = "CREATED",
+  STATUS_CHANGED = "STATUS_CHANGED",
+  ASSIGNED = "ASSIGNED",
+  UPDATED = "UPDATED",
+  COMMENT_ADDED = "COMMENT_ADDED",
+  ESCALATED = "ESCALATED",
+  ATTACHMENT_ADDED = "ATTACHMENT_ADDED",
+  PRIORITY_CHANGED = "PRIORITY_CHANGED",
+  CLOSED = "CLOSED",
+  REOPENED = "REOPENED",
+}
+
+export class ActivityMetadata {
+  additionalProp1: AdditionalProp1
+}
+
+export class AdditionalProp1 {}
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/modules/dashboard/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/modules/shared/components/ui/card";
@@ -32,72 +32,13 @@ import {
   Phone,
   Mail,
   Hash,
+  Loader2,
 } from "lucide-react";
-import { Priority, IssueStatus, SupportTicket } from "../models/support.models";
+import { Priority, IssueStatus, SupportTicket, SupportTicketActivity, ActivityType } from "../models/support.models";
 import { format } from "date-fns";
+import { supportService } from "../services/Support.service";
 
-// Mock ticket data
-const mockTicket: SupportTicket = {
-  id: 1,
-  issue: "AC not working in room 302",
-  issue_code: "TKT-001",
-  type: "COMPLAINT",
-  description:
-    "The air conditioning unit in room 302 is not cooling properly. Guest has complained multiple times about the temperature being too high. The thermostat shows 28°C while set to 20°C. This issue started yesterday evening and has persisted overnight.",
-  property_id: 1,
-  property_name: "Grand Hotel Marina",
-  assigned_to_id: 5,
-  assigned_to_name: "John Maintenance",
-  created_by_id: 10,
-  created_by_name: "Sarah Guest",
-  priority: "HIGH",
-  status: "ACTIVE",
-  issue_status: "IN_PROGRESS",
-  attachments: ["photo1.jpg", "photo2.jpg", "video_evidence.mp4"],
-  activities_count: 8,
-  escalations_count: 1,
-  created_on: "2024-12-14T10:30:00Z",
-  updated_at: "2024-12-14T12:45:00Z",
-};
 
-// Mock activity timeline
-const mockActivities = [
-  {
-    id: 1,
-    type: "STATUS_CHANGE",
-    description: "Status changed from Open to In Progress",
-    created_by: "John Maintenance",
-    created_at: "2024-12-14T11:00:00Z",
-  },
-  {
-    id: 2,
-    type: "COMMENT",
-    description: "Checked the AC unit. The compressor seems to be working but refrigerant levels might be low. Scheduling maintenance check.",
-    created_by: "John Maintenance",
-    created_at: "2024-12-14T11:30:00Z",
-  },
-  {
-    id: 3,
-    type: "ASSIGNMENT",
-    description: "Ticket assigned to John Maintenance",
-    created_by: "System",
-    created_at: "2024-12-14T10:35:00Z",
-  },
-  {
-    id: 4,
-    type: "ESCALATION",
-    description: "Escalated to Senior Maintenance Manager due to repeated complaints",
-    created_by: "Sarah Operations",
-    created_at: "2024-12-14T12:00:00Z",
-  },
-  {
-    id: 5,
-    type: "COMMENT",
-    description: "Maintenance team has been notified. ETA for repair: 2 hours.",
-    created_by: "Mike Manager",
-    created_at: "2024-12-14T12:30:00Z",
-  },
-];
 
 // Mock comments
 const mockComments = [
@@ -133,12 +74,31 @@ const mockEscalations = [
   },
 ];
 
-// Mock attachments with more details
-const mockAttachments = [
-  { name: "photo1.jpg", type: "image", size: "1.2 MB", uploaded_by: "Sarah Guest", uploaded_at: "2024-12-14T10:32:00Z" },
-  { name: "photo2.jpg", type: "image", size: "980 KB", uploaded_by: "Sarah Guest", uploaded_at: "2024-12-14T10:32:00Z" },
-  { name: "video_evidence.mp4", type: "video", size: "15.4 MB", uploaded_by: "John Maintenance", uploaded_at: "2024-12-14T11:35:00Z" },
-];
+// Helper function to determine file type from filename
+const getFileTypeFromName = (filename: string): "image" | "video" | "document" => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext || '')) {
+    return "image";
+  }
+  if (['mp4', 'avi', 'mov', 'wmv', 'flv'].includes(ext || '')) {
+    return "video";
+  }
+  return "document";
+};
+
+// Helper function to convert ticket attachments to display format
+const formatAttachments = (attachments: string[] | null | undefined, createdBy: string | null | undefined, createdAt: string | null | undefined) => {
+  if (!attachments || attachments.length === 0) {
+    return [];
+  }
+  return attachments.map((name) => ({
+    name: name || "Unknown",
+    type: getFileTypeFromName(name || ""),
+    size: "N/A", // Size not available from API
+    uploaded_by: createdBy || "Unknown",
+    uploaded_at: createdAt || new Date().toISOString(),
+  }));
+};
 
 const getPriorityBadge = (priority: Priority) => {
   const config = {
@@ -160,18 +120,33 @@ const getStatusBadge = (status: IssueStatus) => {
   return config[status] || config.OPEN;
 };
 
-const getActivityIcon = (type: string) => {
+const getActivityIcon = (type: ActivityType | string) => {
   switch (type) {
+    case ActivityType.STATUS_CHANGED:
     case "STATUS_CHANGE":
       return <Clock className="h-4 w-4 text-info" />;
+    case ActivityType.COMMENT_ADDED:
     case "COMMENT":
       return <MessageSquare className="h-4 w-4 text-primary" />;
+    case ActivityType.ASSIGNED:
     case "ASSIGNMENT":
       return <User className="h-4 w-4 text-success" />;
+    case ActivityType.ESCALATED:
     case "ESCALATION":
       return <TrendingUp className="h-4 w-4 text-destructive" />;
+    case ActivityType.ATTACHMENT_ADDED:
     case "ATTACHMENT":
       return <Paperclip className="h-4 w-4 text-muted-foreground" />;
+    case ActivityType.CREATED:
+      return <AlertCircle className="h-4 w-4 text-primary" />;
+    case ActivityType.PRIORITY_CHANGED:
+      return <TrendingUp className="h-4 w-4 text-warning" />;
+    case ActivityType.CLOSED:
+      return <XCircle className="h-4 w-4 text-muted-foreground" />;
+    case ActivityType.REOPENED:
+      return <AlertCircle className="h-4 w-4 text-info" />;
+    case ActivityType.UPDATED:
+      return <Clock className="h-4 w-4 text-muted-foreground" />;
     default:
       return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
   }
@@ -188,8 +163,29 @@ const getFileIcon = (type: string) => {
   }
 };
 
+// Helper function to get initials from a name safely
+const getInitials = (name: string | null | undefined): string => {
+  if (!name || !name.trim()) {
+    return "?";
+  }
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 // Attachment Thumbnail Component
-const AttachmentThumbnail = ({ file, index }: { file: typeof mockAttachments[0]; index: number }) => {
+interface AttachmentFile {
+  name: string;
+  type: "image" | "video" | "document";
+  size: string;
+  uploaded_by: string;
+  uploaded_at: string;
+}
+
+const AttachmentThumbnail = ({ file, index }: { file: AttachmentFile; index: number }) => {
   const [imageError, setImageError] = useState(false);
 
   if (file.type === "image" && !imageError) {
@@ -235,11 +231,66 @@ export function SupportTicketAdvancedView() {
   const navigate = useNavigate();
   const [newComment, setNewComment] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+  const [ticket, setTicket] = useState<SupportTicket | null>(null);
+  const [activities, setActivities] = useState<SupportTicketActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const ticket = mockTicket;
-  const priorityConfig = getPriorityBadge(ticket.priority);
-  const statusConfig = getStatusBadge(ticket.issue_status);
-  const StatusIcon = statusConfig.icon;
+  // Fetch ticket data
+  useEffect(() => {
+    const fetchTicket = async () => {
+      if (!id) {
+        setError("Ticket ID is required");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await supportService.getSupportTicketById(Number(id));
+        
+        if (response.status && response.data) {
+          setTicket(response.data);
+        } else {
+          setError(response.errMessage || "Failed to fetch ticket");
+        }
+      } catch (err) {
+        console.error("Error fetching ticket:", err);
+        setError("An error occurred while fetching the ticket");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTicket();
+  }, [id]);
+
+  // Fetch activities when ticket is loaded
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (!id || !ticket) {
+        return;
+      }
+
+      try {
+        setLoadingActivities(true);
+        const response = await supportService.getSupportTicketActivities(Number(id));
+        
+        if (response.status && response.data) {
+          setActivities(response.data);
+        }
+      } catch (err) {
+        console.error("Error fetching activities:", err);
+        // Don't set error state for activities, just log it
+      } finally {
+        setLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+  }, [id, ticket]);
 
   const handleSendComment = () => {
     if (newComment.trim()) {
@@ -247,6 +298,42 @@ export function SupportTicketAdvancedView() {
       setNewComment("");
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLayout showHeader={false}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading ticket details...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state
+  if (error || !ticket) {
+    return (
+      <DashboardLayout showHeader={false}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <p className="text-destructive">{error || "Ticket not found"}</p>
+            <Button variant="outline" onClick={() => navigate("/support-tickets")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Tickets
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const priorityConfig = getPriorityBadge(ticket.priority);
+  const statusConfig = getStatusBadge(ticket.issue_status);
+  const StatusIcon = statusConfig.icon;
 
   return (
     <DashboardLayout showHeader={false}>
@@ -365,25 +452,32 @@ export function SupportTicketAdvancedView() {
                     </Button>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {mockAttachments.map((file, index) => (
-                        <div
-                          key={index}
-                          className="group relative rounded-lg border border-border/50 hover:border-border transition-colors overflow-hidden"
-                        >
-                          <AttachmentThumbnail file={file} index={index} />
-                          <div className="p-3 bg-background">
-                            <p className="font-medium text-sm text-foreground truncate mb-1">{file.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {file.size} • {file.uploaded_by}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(file.uploaded_at), "MMM dd, yyyy")}
-                            </p>
+                    {ticket.attachments && ticket.attachments.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {formatAttachments(ticket.attachments, ticket.created_by_name, ticket.created_on).map((file, index) => (
+                          <div
+                            key={index}
+                            className="group relative rounded-lg border border-border/50 hover:border-border transition-colors overflow-hidden"
+                          >
+                            <AttachmentThumbnail file={file} index={index} />
+                            <div className="p-3 bg-background">
+                              <p className="font-medium text-sm text-foreground truncate mb-1">{file.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {file.size} • {file.uploaded_by}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(file.uploaded_at), "MMM dd, yyyy")}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Paperclip className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                        <p>No attachments for this ticket</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -396,27 +490,40 @@ export function SupportTicketAdvancedView() {
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[400px] pr-4">
-                      <div className="space-y-6">
-                        {mockActivities.map((activity, index) => (
-                          <div key={activity.id} className="relative pl-8">
-                            {index !== mockActivities.length - 1 && (
-                              <div className="absolute left-[11px] top-8 bottom-0 w-0.5 bg-border" />
-                            )}
-                            <div className="absolute left-0 top-1 p-1.5 rounded-full bg-background border-2 border-border">
-                              {getActivityIcon(activity.type)}
-                            </div>
-                            <div className="bg-muted/30 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-foreground">{activity.created_by}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {format(new Date(activity.created_at), "MMM dd, yyyy 'at' HH:mm")}
-                                </span>
+                      {loadingActivities ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : activities?.length > 0 ? (
+                        <div className="space-y-6">
+                          {activities.map((activity, index) => (
+                            <div key={activity.id} className="relative pl-8">
+                              {index !== activities.length - 1 && (
+                                <div className="absolute left-[11px] top-8 bottom-0 w-0.5 bg-border" />
+                              )}
+                              <div className="absolute left-0 top-1 p-1.5 rounded-full bg-background border-2 border-border">
+                                {getActivityIcon(activity.activity_type)}
                               </div>
-                              <p className="text-sm text-muted-foreground">{activity.description}</p>
+                              <div className="bg-muted/30 rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-foreground">
+                                    {activity.performed_by_name || "System"}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(activity.created_at), "MMM dd, yyyy 'at' HH:mm")}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">{activity.description}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <MessageSquare className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                          <p>No activities found for this ticket</p>
+                        </div>
+                      )}
                     </ScrollArea>
                   </CardContent>
                 </Card>
@@ -530,14 +637,11 @@ export function SupportTicketAdvancedView() {
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                        {ticket.created_by_name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                        {getInitials(ticket.created_by_name)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-foreground text-sm">{ticket.created_by_name}</p>
+                      <p className="font-medium text-foreground text-sm">{ticket.created_by_name || "N/A"}</p>
                       <p className="text-xs text-muted-foreground">Reporter</p>
                     </div>
                   </div>
@@ -548,14 +652,11 @@ export function SupportTicketAdvancedView() {
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="text-xs bg-success/10 text-success">
-                        {ticket.assigned_to_name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                        {getInitials(ticket.assigned_to_name)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-foreground text-sm">{ticket.assigned_to_name}</p>
+                      <p className="font-medium text-foreground text-sm">{ticket.assigned_to_name || "Unassigned"}</p>
                       <p className="text-xs text-muted-foreground">Assignee</p>
                     </div>
                   </div>
