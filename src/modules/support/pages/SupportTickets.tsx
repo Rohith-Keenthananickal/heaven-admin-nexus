@@ -44,6 +44,7 @@ import {
   TrendingUp,
   Eye,
   Paperclip,
+  Plus,
 } from "lucide-react";
 import {
   SupportTicket,
@@ -55,6 +56,7 @@ import {
   issueStatusOptions,
 } from "../models/support.models";
 import { format } from "date-fns";
+import { CreateTicketModal } from "../components/CreateTicketModal";
 
 // Mock data for demonstration
 const mockTickets: SupportTicket[] = [
@@ -194,6 +196,7 @@ export function SupportTickets() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const filteredTickets = mockTickets.filter((ticket) => {
     const matchesSearch =
@@ -217,8 +220,28 @@ export function SupportTickets() {
     setStatusFilter("all");
   };
 
+  const handleCreateTicket = async (data: {
+    issue: string;
+    type: string;
+    description: string;
+    property_id: number;
+    assigned_to_id: number;
+    priority: string;
+    attachments: string[];
+    created_by_id: number;
+    issue_status: string;
+  }) => {
+    // TODO: Replace with actual API call
+    console.log("Creating ticket:", data);
+    
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    
+    // TODO: Show success toast and refresh ticket list
+  };
+
   return (
-    <DashboardLayout>
+    <DashboardLayout showHeader={false}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -229,6 +252,10 @@ export function SupportTickets() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Ticket
+            </Button>
             <Button
               variant={viewMode === "table" ? "default" : "outline"}
               size="icon"
@@ -586,6 +613,13 @@ export function SupportTickets() {
             </PaginationContent>
           </Pagination>
         </div>
+
+        {/* Create Ticket Modal */}
+        <CreateTicketModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreateTicket}
+        />
       </div>
     </DashboardLayout>
   );

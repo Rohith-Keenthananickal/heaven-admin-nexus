@@ -100,3 +100,10 @@ export const issueStatusOptions = [
   { value: 'RESOLVED', label: 'Resolved' },
   { value: 'CLOSED', label: 'Closed' },
 ];
+
+export const ticketTypeOptions = [
+  { value: 'COMPLAINT', label: 'Complaint' },
+  { value: 'INQUIRY', label: 'Inquiry' },
+  { value: 'REQUEST', label: 'Request' },
+  { value: 'FEEDBACK', label: 'Feedback' },
+];

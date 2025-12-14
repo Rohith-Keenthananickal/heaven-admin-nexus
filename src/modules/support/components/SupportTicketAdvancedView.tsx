@@ -188,6 +188,48 @@ const getFileIcon = (type: string) => {
   }
 };
 
+// Attachment Thumbnail Component
+const AttachmentThumbnail = ({ file, index }: { file: typeof mockAttachments[0]; index: number }) => {
+  const [imageError, setImageError] = useState(false);
+
+  if (file.type === "image" && !imageError) {
+    return (
+      <div className="aspect-square relative bg-muted/30 group/thumb">
+        <img
+          src={`https://picsum.photos/200/200?random=${index}`}
+          alt={file.name}
+          className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
+        />
+        <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover/thumb:opacity-100">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 bg-background/80 hover:bg-background">
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 bg-background/80 hover:bg-background">
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="aspect-square flex flex-col items-center justify-center p-4 bg-muted/30">
+      <div className="mb-2">{getFileIcon(file.type)}</div>
+      <div className="flex items-center gap-2 mt-auto">
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Eye className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Download className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export function SupportTicketAdvancedView() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -207,7 +249,7 @@ export function SupportTicketAdvancedView() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout showHeader={false}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -226,12 +268,12 @@ export function SupportTicketAdvancedView() {
             <h1 className="text-xl font-bold text-foreground">{ticket.issue}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Escalate
+            <Button variant="destructive" size="sm">
+              <XCircle className="h-4 w-4" />
+              Reject
             </Button>
             <Button size="sm">
-              <CheckCircle2 className="h-4 w-4 mr-2" />
+              <CheckCircle2 className="h-4 w-4" />
               Mark Resolved
             </Button>
           </div>
@@ -241,11 +283,10 @@ export function SupportTicketAdvancedView() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
                 <TabsTrigger value="comments">Comments</TabsTrigger>
-                <TabsTrigger value="attachments">Attachments</TabsTrigger>
                 <TabsTrigger value="escalations">Escalations</TabsTrigger>
               </TabsList>
 
@@ -313,6 +354,38 @@ export function SupportTicketAdvancedView() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Attachments Section */}
+                <Card className="border-border/50">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-base">Attachments</CardTitle>
+                    <Button variant="outline" size="sm">
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Add File
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {mockAttachments.map((file, index) => (
+                        <div
+                          key={index}
+                          className="group relative rounded-lg border border-border/50 hover:border-border transition-colors overflow-hidden"
+                        >
+                          <AttachmentThumbnail file={file} index={index} />
+                          <div className="p-3 bg-background">
+                            <p className="font-medium text-sm text-foreground truncate mb-1">{file.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {file.size} • {file.uploaded_by}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(file.uploaded_at), "MMM dd, yyyy")}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* Activity Tab */}
@@ -395,48 +468,6 @@ export function SupportTicketAdvancedView() {
                         <Send className="h-4 w-4 mr-2" />
                         Send
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Attachments Tab */}
-              <TabsContent value="attachments" className="mt-4">
-                <Card className="border-border/50">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-base">Attachments</CardTitle>
-                    <Button variant="outline" size="sm">
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Add File
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {mockAttachments.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-4 p-4 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
-                        >
-                          <div className="p-3 rounded-lg bg-muted/50">{getFileIcon(file.type)}</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground truncate">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {file.size} • {file.uploaded_by}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(file.uploaded_at), "MMM dd, yyyy")}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   </CardContent>
                 </Card>
