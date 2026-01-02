@@ -245,7 +245,7 @@ export default function AreaCoordinators() {
                   </TableRow>
                 ) : (
                   filteredAtps.map((atp) => (
-                    <TableRow key={atp.id} >
+                    <TableRow key={atp.id} onClick={() => navigate(`/area-coordinators/${atp.id}`)} className="cursor-pointer">
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
@@ -255,7 +255,7 @@ export default function AreaCoordinators() {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium cursor-pointer" onClick={() => navigate(`/area-coordinators/${atp.id}`)}>{atp.full_name}</div>
+                            <div className="font-medium">{atp.full_name}</div>
                             <div className="text-sm text-muted-foreground">ID: {atp.id}</div>
                           </div>
                         </div>
