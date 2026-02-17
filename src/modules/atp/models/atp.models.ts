@@ -1,10 +1,10 @@
 export class GetAllAreaCoordinatorsPayload {
-    user_type: string[]
+    user_type: ['ADMIN' | 'AREA_COORDINATOR' | 'HOST' | 'GUEST']
     page?: number
     search_query?: string
     date_filter?: DateFilter
     limit?: number
-    status?: string[]
+    status?: ['ACTIVE' | 'BLOCKED' | 'DELETED']
     approval_status?: string[]
   }
   

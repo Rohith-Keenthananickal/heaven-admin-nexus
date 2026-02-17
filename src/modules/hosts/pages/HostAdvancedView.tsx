@@ -1,10 +1,6 @@
-import { useState } from "react"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/modules/shared/components/ui/dialog"
+import { useState, useEffect, useCallback } from "react"
+import { useParams, useNavigate } from "react-router-dom"
+import { DashboardLayout } from "@/modules/dashboard/components/DashboardLayout"
 import { Button } from "@/modules/shared/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/modules/shared/components/ui/card"
 import { Badge } from "@/modules/shared/components/ui/badge"
@@ -19,6 +15,7 @@ import {
   TableRow,
 } from "@/modules/shared/components/ui/table"
 import { 
+  ArrowLeft,
   Star, 
   Home, 
   Calendar, 
@@ -34,14 +31,11 @@ import {
   Ban,
   UserCheck,
   Download,
-  Eye
+  Eye,
+  Loader2
 } from "lucide-react"
-
-interface HostAdvancedViewProps {
-  isOpen: boolean
-  onClose: () => void
-  host: any
-}
+import hostService from "@/modules/hosts/services/host.service"
+import { User } from "@/modules/auth/models/auth.models"
 
 const mockProperties = [
   {
@@ -112,12 +106,16 @@ const mockReviews = [
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "verified":
+    case "ACTIVE":
       return <Badge className="bg-success/10 text-success border-success/20">Verified</Badge>
     case "active":
       return <Badge className="bg-primary/10 text-primary border-primary/20">Active</Badge>
     case "suspended":
+    case "BLOCKED":
+    case "BANNED":
       return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Suspended</Badge>
     case "pending":
+    case "PENDING":
       return <Badge className="bg-warning/10 text-warning border-warning/20">Pending</Badge>
     default:
       return <Badge variant="secondary">{status}</Badge>
@@ -137,34 +135,179 @@ const getPropertyStatusBadge = (status: string) => {
   }
 }
 
-export function HostAdvancedView({ isOpen, onClose, host }: HostAdvancedViewProps) {
+// Helper function to map User to display format
+const mapUserToDisplay = (user: User) => {
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toISOString().split('T')[0]
+  }
+
+  const mapStatus = (status: string) => {
+    const statusLower = status?.toLowerCase() || 'active'
+    if (statusLower === 'active') return 'verified'
+    if (statusLower === 'blocked' || statusLower === 'banned') return 'suspended'
+    if (statusLower === 'deleted') return 'suspended'
+    return statusLower
+  }
+
+  const getLocation = () => {
+    if (user.area_coordinator_profile?.city && user.area_coordinator_profile?.state) {
+      return `${user.area_coordinator_profile.city}, ${user.area_coordinator_profile.state}`
+    }
+    return "N/A"
+  }
+
+  const getAvatar = () => {
+    if (user.profile_image) return user.profile_image
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.full_name || user.id}`
+  }
+
+  return {
+    id: `H${String(user.id).padStart(3, '0')}`,
+    name: user.full_name || 'N/A',
+    email: user.email || 'N/A',
+    phone: user.phone_number || 'N/A',
+    status: mapStatus(user.status),
+    joinDate: formatDate(user.created_at),
+    totalProperties: user.host_profile?.experience_years || 0,
+    totalEarnings: "₹0",
+    lastActivity: formatDate(user.updated_at),
+    location: getLocation(),
+    rating: 4.5,
+    avatar: getAvatar(),
+    verificationStatus: user.area_coordinator_profile?.approval_status?.toLowerCase() === 'approved' ? 'verified' : 'pending',
+    responseRate: "95%",
+  }
+}
+
+export default function HostAdvancedView() {
+  const { id } = useParams()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState("overview")
+  const [host, setHost] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!host) return null
+  const fetchHost = useCallback(async () => {
+    if (!id) return
+    
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await hostService.getHostById(id)
+      
+      if (response.status && response.data) {
+        setHost(response.data)
+      } else {
+        setError(response.errMessage || "Failed to fetch host details")
+      }
+    } catch (err) {
+      console.error("Error fetching host:", err)
+      setError("An error occurred while fetching host details")
+    } finally {
+      setLoading(false)
+    }
+  }, [id])
 
-  // Safety checks for host properties
-  const hostName = host.name || host.full_name || 'N/A'
-  const hostAvatar = host.avatar || host.profile_image || ''
-  const hostId = host.id || 'N/A'
+  useEffect(() => {
+    if (id) {
+      fetchHost()
+    }
+  }, [id, fetchHost])
+
+  if (loading) {
+    return (
+      <DashboardLayout
+        title="Host Details"
+        action={
+          <Button variant="outline" onClick={() => navigate('/hosts')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Hosts
+          </Button>
+        }
+      >
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+            <p className="text-sm text-muted-foreground mt-4">Loading host details...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error || !host) {
+    return (
+      <DashboardLayout
+        title="Host Details"
+        action={
+          <Button variant="outline" onClick={() => navigate('/hosts')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Hosts
+          </Button>
+        }
+      >
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <p className="text-destructive">{error || "Host not found"}</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => navigate('/hosts')}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Hosts
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+    )
+  }
+
+  const hostDisplay = mapUserToDisplay(host)
+  const hostName = hostDisplay.name
+  const hostAvatar = hostDisplay.avatar
+  const hostId = hostDisplay.id
   const initials = hostName && hostName !== 'N/A' 
     ? hostName.split(' ').map((n: string) => n[0]).join('').toUpperCase() 
     : 'H'
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={hostAvatar} alt={hostName} />
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="text-xl font-semibold">{hostName}</div>
-              <div className="text-sm text-muted-foreground">Host ID: {hostId}</div>
+    <DashboardLayout
+      title="Host Details"
+      action={
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/hosts')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Hosts
+          </Button>
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        {/* Header Card */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={hostAvatar} alt={hostName} />
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <div className="text-2xl font-semibold">{hostName}</div>
+                <div className="text-sm text-muted-foreground">Host ID: {hostId}</div>
+                <div className="mt-2">{getStatusBadge(hostDisplay.status)}</div>
+              </div>
             </div>
-          </DialogTitle>
-        </DialogHeader>
+          </CardContent>
+        </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
@@ -189,21 +332,21 @@ export function HostAdvancedView({ isOpen, onClose, host }: HostAdvancedViewProp
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <div className="text-sm font-medium">Email</div>
-                      <div className="text-sm text-muted-foreground">{host.email}</div>
+                      <div className="text-sm text-muted-foreground">{hostDisplay.email}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <div className="text-sm font-medium">Phone</div>
-                      <div className="text-sm text-muted-foreground">{host.phone}</div>
+                      <div className="text-sm text-muted-foreground">{hostDisplay.phone}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <div className="text-sm font-medium">Location</div>
-                      <div className="text-sm text-muted-foreground">{host.location}</div>
+                      <div className="text-sm text-muted-foreground">{hostDisplay.location}</div>
                     </div>
                   </div>
                 </div>
@@ -212,21 +355,21 @@ export function HostAdvancedView({ isOpen, onClose, host }: HostAdvancedViewProp
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <div className="text-sm font-medium">Member Since</div>
-                      <div className="text-sm text-muted-foreground">{host.joinDate}</div>
+                      <div className="text-sm text-muted-foreground">{hostDisplay.joinDate}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Shield className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <div className="text-sm font-medium">Verification Status</div>
-                      <div>{getStatusBadge(host.verificationStatus)}</div>
+                      <div>{getStatusBadge(hostDisplay.verificationStatus)}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <div className="text-sm font-medium">Response Rate</div>
-                      <div className="text-sm text-muted-foreground">{host.responseRate}</div>
+                      <div className="text-sm text-muted-foreground">{hostDisplay.responseRate}</div>
                     </div>
                   </div>
                 </div>
@@ -244,22 +387,22 @@ export function HostAdvancedView({ isOpen, onClose, host }: HostAdvancedViewProp
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-primary">{host.totalProperties}</div>
+                    <div className="text-2xl font-bold text-primary">{hostDisplay.totalProperties}</div>
                     <div className="text-sm text-muted-foreground">Total Properties</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-success">{host.totalEarnings}</div>
+                    <div className="text-2xl font-bold text-success">{hostDisplay.totalEarnings}</div>
                     <div className="text-sm text-muted-foreground">Total Earnings</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
                     <div className="flex items-center justify-center gap-1">
                       <Star className="h-5 w-5 text-yellow-500 fill-current" />
-                      <span className="text-2xl font-bold">{host.rating}</span>
+                      <span className="text-2xl font-bold">{hostDisplay.rating}</span>
                     </div>
                     <div className="text-sm text-muted-foreground">Average Rating</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-info">{host.lastActivity}</div>
+                    <div className="text-2xl font-bold text-info">{hostDisplay.lastActivity}</div>
                     <div className="text-sm text-muted-foreground">Last Activity</div>
                   </div>
                 </div>
@@ -285,13 +428,13 @@ export function HostAdvancedView({ isOpen, onClose, host }: HostAdvancedViewProp
                     <Settings className="h-4 w-4 mr-2" />
                     Account Settings
                   </Button>
-                  {host.status === "pending" && (
+                  {hostDisplay.status === "pending" && (
                     <Button size="sm">
                       <UserCheck className="h-4 w-4 mr-2" />
                       Verify Account
                     </Button>
                   )}
-                  {host.status !== "suspended" ? (
+                  {hostDisplay.status !== "suspended" ? (
                     <Button variant="destructive" size="sm">
                       <Ban className="h-4 w-4 mr-2" />
                       Suspend Account
@@ -457,7 +600,7 @@ export function HostAdvancedView({ isOpen, onClose, host }: HostAdvancedViewProp
             </Card>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </DashboardLayout>
   )
 }
