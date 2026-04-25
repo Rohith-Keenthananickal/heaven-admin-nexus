@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 865.83 145.51">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#linear-gradient-2);
+      }
+
+      .cls-2 {
+        fill: #d4a237;
+      }
+
+      .cls-3 {
+        fill: #ffd26e;
+      }
+
+      .cls-4 {
+        fill: #1f1f1f;
+      }
+
+      .cls-5 {
+        fill: url(#linear-gradient-3);
+      }
+
+      .cls-6 {
+        fill: url(#linear-gradient);
+      }
+
+      .cls-7 {
+        font-family: Manrope-SemiBold, Manrope;
+        font-size: 122.2px;
+        font-variation-settings: 'wght' 600;
+        font-weight: 600;
+      }
+
+      .cls-8 {
+        fill: #1a8491;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="146.93" y1="110.63" x2="110.58" y2="52.43" gradientTransform="translate(-2.76 .4) rotate(-.17)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2bb0b8"/>
+      <stop offset="1" stop-color="#1a6c71"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-2" x1="113.37" y1="140.64" x2="18.14" y2="88.42" xlink:href="#linear-gradient"/>
+    <linearGradient id="linear-gradient-3" x1="13.49" y1="11.83" x2="86.37" y2="82.82" xlink:href="#linear-gradient"/>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <g>
+        <g>
+          <path class="cls-6" d="m116.15,19.81c26.53,26.38,26.81,69.17.73,95.89h0s0,0,0,0h0s0,0,0,0c.43-28.86-10.41-57.86-32.5-79.82-6.46-6.42-13.52-11.88-20.99-16.37,11.18-6.15,23.21-10.2,35.51-12.18,6.21,3.15,12.05,7.31,17.25,12.49Z"/>
+          <path class="cls-1" d="m116.88,115.7h0c-.14.16-.29.31-.44.46-26.53,26.68-69.66,26.81-96.34.28-5.21-5.18-9.4-10.99-12.59-17.18,1.95-12.64,6.11-25.01,12.47-36.49,4.53,7.45,10.04,14.48,16.5,20.91,22.19,22.06,51.41,32.73,80.4,32.02Z"/>
+        </g>
+        <g>
+          <polygon class="cls-3" points="130.92 6.31 69.1 68.13 53.69 52.71 53.72 52.7 130.92 6.31"/>
+          <polygon class="cls-2" points="84.51 83.53 69.1 68.13 130.92 6.31 84.53 83.51 84.51 83.53"/>
+          <polygon class="cls-3" points="7.28 129.94 69.1 68.12 84.51 83.53 84.49 83.55 7.28 129.94"/>
+          <polygon class="cls-2" points="53.69 52.71 69.1 68.12 7.28 129.94 53.68 52.74 53.69 52.71"/>
+        </g>
+        <path class="cls-5" d="m98.9,7.33c-12.3,1.97-24.32,6.03-35.51,12.18-4.28,2.35-8.44,5.01-12.45,7.98l65.93,88.21h0s0,0,0,0L27.55,50.95c-2.8,3.81-5.33,7.76-7.58,11.82-6.36,11.48-10.52,23.85-12.47,36.49-10.08-19.61-10.01-43.1.22-62.68l.45-.84c3.03-5.61,6.91-10.89,11.64-15.64,4.98-5.01,10.55-9.09,16.48-12.22,0,0,.02-.01.03-.01,19.49-10.29,42.94-10.48,62.58-.53Z"/>
+      </g>
+      <text class="cls-7" transform="translate(167.23 114.35)"><tspan class="cls-8" x="0" y="0">trip</tspan><tspan class="cls-2" x="205.47" y="0">haven</tspan><tspan class="cls-4" x="556.48" y="0">co</tspan></text>
+    </g>
+  </g>
+</svg>
