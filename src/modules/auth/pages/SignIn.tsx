@@ -58,14 +58,14 @@ export default function SignIn() {
           <div className="text-center">
             <div className="flex items-center justify-center">
               <img 
-                src="/favicon.png" 
+                src="/Logo_color.svg" 
                 alt="Heaven Connect" 
                 className="mr-3"
                 width={'300px'}
               />
               {/* <span className="text-2xl font-bold text-black">Heaven Connect</span> */}
             </div>
-            <h1 className="text-3xl font-bold text-black mb-2">Admin Sign In</h1>
+            <h1 className="text-3xl font-bold text-black mb-2 mt-4">Admin Sign In</h1>
             <p className="text-gray-600 mb-5">Welcome back! Please enter your credentials.</p>
           </div>
 

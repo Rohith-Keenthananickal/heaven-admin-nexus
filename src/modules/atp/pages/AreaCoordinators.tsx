@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { DashboardLayout } from "@/modules/dashboard/components/DashboardLayout"
 import { Button } from "@/modules/shared/components/ui/button"
 import { Input } from "@/modules/shared/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/modules/shared/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/modules/shared/components/ui/card"
 import { Badge } from "@/modules/shared/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/modules/shared/components/ui/avatar"
 import {
@@ -21,13 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/modules/shared/components/ui/select"
-import { Search, Plus, Filter, Eye, Edit, MoreVertical, Loader2 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/modules/shared/components/ui/dropdown-menu"
+import { Search, Filter, Loader2 } from "lucide-react"
 import AtpService from "../services/atp.service"
 import { GetAllAreaCoordinatorsPayload } from "../models/atp.models"
 import { User } from "@/modules/auth/models/auth.models"
@@ -40,6 +34,8 @@ export default function AreaCoordinators() {
   const [atps, setAtps] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   // Fetch area coordinators on component mount
   useEffect(() => {
@@ -59,7 +55,7 @@ export default function AreaCoordinators() {
       const payload: GetAllAreaCoordinatorsPayload = {
         user_type: ["AREA_COORDINATOR"],
         search_query: searchTerm || undefined,
-        status: statusFilter === "all" ? undefined : [statusFilter],
+        status: statusFilter === "all" ? undefined : [statusFilter as unknown as "ACTIVE" | "BLOCKED" | "DELETED"],
         approval_status: approvalFilter === "all" ? undefined : [approvalFilter],
         limit: 100 // Set a reasonable limit
       }
@@ -92,9 +88,9 @@ export default function AreaCoordinators() {
     switch (status) {
       case "ACTIVE":
         return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>
-      case "SUSPENDED":
+      case "INACTIVE":
         return <Badge className="bg-warning/10 text-warning border-warning/20">Suspended</Badge>
-      case "BANNED":
+      case "DELETED":
         return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Banned</Badge>
       default:
         return <Badge variant="secondary">{status}</Badge>
@@ -122,6 +118,23 @@ export default function AreaCoordinators() {
     const matchesApproval = approvalFilter === "all" || atp.area_coordinator_profile?.approval_status === approvalFilter
     return matchesSearch && matchesStatus && matchesApproval
   })
+
+  const totalItems = filteredAtps.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, totalItems)
+  const paginatedAtps = filteredAtps.slice(startIndex, endIndex)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter, approvalFilter, pageSize])
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   if (loading && atps.length === 0) {
     return (
@@ -161,7 +174,7 @@ export default function AreaCoordinators() {
       //   </Button>
       // }
     >
-      <Card>
+      <Card className="h-[calc(100vh-8.5rem)] flex flex-col">
         <CardHeader>
           {/* <CardTitle>Area Coordinators</CardTitle> */}
           <p className="text-sm text-muted-foreground">
@@ -169,7 +182,7 @@ export default function AreaCoordinators() {
           </p>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="flex flex-col min-h-0">
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1 relative">
@@ -214,9 +227,10 @@ export default function AreaCoordinators() {
           </div>
 
           {/* ATP Table */}
-          <div className="border rounded-lg">
+          <div className="border rounded-lg flex-1 min-h-0 overflow-hidden">
+            <div className="h-full overflow-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
                   <TableHead>ATP Details</TableHead>
                   <TableHead>Contact</TableHead>
@@ -237,14 +251,14 @@ export default function AreaCoordinators() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : filteredAtps.length === 0 ? (
+                ) : paginatedAtps.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No area coordinators found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredAtps.map((atp) => (
+                  paginatedAtps.map((atp) => (
                     <TableRow key={atp.id} onClick={() => navigate(`/area-coordinators/${atp.id}`)} className="cursor-pointer">
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -297,6 +311,46 @@ export default function AreaCoordinators() {
                 )}
               </TableBody>
             </Table>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {totalItems === 0 ? 0 : startIndex + 1}-{endIndex} of {totalItems}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 / page</SelectItem>
+                  <SelectItem value="20">20 / page</SelectItem>
+                  <SelectItem value="50">50 / page</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={safeCurrentPage <= 1 || loading}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground min-w-[90px] text-center">
+                Page {safeCurrentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={safeCurrentPage >= totalPages || loading}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

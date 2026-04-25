@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/modules/shared/components/ui/sonner";
 import { TooltipProvider } from "@/modules/shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Dashboard, SignIn, PropertyManagement, CrmGuest, NotFound, HostsListing, HostAdvancedView, AtpDashboard, AreaCoordinators, TrainingModules, CreateTrainingModule, AtpAdvancedView, SupportTickets, SupportTicketAdvancedView } from "@/modules";
+import { Dashboard, SignIn, PropertyManagement, CrmGuest, NotFound, HostsListing, HostAdvancedView, AtpDashboard, AreaCoordinators, TrainingModules, CreateTrainingModule, GeoMap, AtpAdvancedView, SupportTickets, SupportTicketAdvancedView } from "@/modules";
 import {  ForgotPassword } from "@/modules";
 import { authService } from "@/modules/auth/services/authService";
 
@@ -106,6 +106,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <CreateTrainingModule />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/geo-map" 
+            element={
+              <ProtectedRoute>
+                <GeoMap />
               </ProtectedRoute>
             } 
           />
