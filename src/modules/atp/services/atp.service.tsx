@@ -1,5 +1,5 @@
 import { baseUrl } from "@/baseUrl";
-import { GetAllAreaCoordinatorsPayload, UpdateApprovalStatusPayload, UpdateUserStatusPayload } from "../models/atp.models";
+import { GetAllAreaCoordinatorsPayload, UpdateApprovalStatusPayload, UpdateUserStatusPayload, GeoMapPayload, GeoMapResponse } from "../models/atp.models";
 import { api } from "@/modules/shared";
 import { User } from "@/modules/auth/models/auth.models";
 import { ApiResponse } from "@/modules/shared/models/api.models";
@@ -23,6 +23,11 @@ class AtpService {
 
     async updateUserStatus(id : string, payload : UpdateUserStatusPayload) : Promise<ApiResponse<User>> {
         const response = await api.patch(`${baseUrl}/api/v1/users/${id}/status`, payload);
+        return response.data;
+    }
+
+    async getGeoMapData(payload: GeoMapPayload): Promise<GeoMapResponse> {
+        const response = await api.post(`${baseUrl}/api/v1/users/geo-map`, payload);
         return response.data;
     }
 }

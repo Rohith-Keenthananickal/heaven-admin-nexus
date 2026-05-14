@@ -14,7 +14,8 @@ import {
   FileText,
   ChevronRight,
   ChevronDown,
-  LifeBuoy
+  LifeBuoy,
+  Map
 } from "lucide-react"
 
 import {
@@ -47,6 +48,7 @@ const navigationItems = [
       { name: "Dashboard", href: "/atp-dashboard" },
       { name: "Area Coordinators", href: "/area-coordinators" },
       { name: "Training Modules", href: "/training-modules" },
+      { name: "Geo Map", href: "/geo-map" },
     ]
   },
   { 
