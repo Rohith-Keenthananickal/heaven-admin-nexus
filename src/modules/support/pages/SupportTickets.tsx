@@ -62,6 +62,8 @@ import { format } from "date-fns";
 import { CreateTicketModal } from "../components/CreateTicketModal";
 import { supportService } from "../services/Support.service";
 import { Pagination as PaginationType } from "@/modules/shared/models/api.models";
+import { CreateIssuePayload } from "../models/support.models";
+import { toast } from "sonner";
 
 
 const getPriorityBadge = (priority: Priority) => {
@@ -69,6 +71,7 @@ const getPriorityBadge = (priority: Priority) => {
     LOW: { variant: "secondary" as const, className: "bg-muted text-muted-foreground" },
     MEDIUM: { variant: "secondary" as const, className: "bg-info/10 text-info border-info/20" },
     HIGH: { variant: "secondary" as const, className: "bg-warning/10 text-warning border-warning/20" },
+    URGENT: { variant: "destructive" as const, className: "bg-destructive/10 text-destructive border-destructive/20" },
     CRITICAL: { variant: "destructive" as const, className: "bg-destructive/10 text-destructive border-destructive/20" },
   };
   return config[priority] || config.MEDIUM;
@@ -78,6 +81,7 @@ const getStatusBadge = (status: IssueStatus) => {
   const config = {
     OPEN: { icon: AlertCircle, className: "bg-warning/10 text-warning border-warning/20", label: "Open" },
     IN_PROGRESS: { icon: Clock, className: "bg-info/10 text-info border-info/20", label: "In Progress" },
+    ESCALATED: { icon: TrendingUp, className: "bg-destructive/10 text-destructive border-destructive/20", label: "Escalated" },
     RESOLVED: { icon: CheckCircle2, className: "bg-success/10 text-success border-success/20", label: "Resolved" },
     CLOSED: { icon: XCircle, className: "bg-muted text-muted-foreground", label: "Closed" },
   };
@@ -184,22 +188,35 @@ export function SupportTickets() {
 
   const handleCreateTicket = async (data: {
     issue: string;
-    type: string;
+    type: TicketType;
     description: string;
     property_id: number;
     assigned_to_id: number;
-    priority: string;
+    priority: Priority;
     attachments: string[];
     created_by_id: number;
-    issue_status: string;
+    issue_status: IssueStatus;
   }) => {
-    // TODO: Replace with actual API call
-    console.log("Creating ticket:", data);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    // Refresh ticket list after creation
+    const payload: CreateIssuePayload = {
+      issue: data.issue.trim(),
+      type: data.type,
+      description: data.description.trim(),
+      property_id: data.property_id,
+      assigned_to_id: data.assigned_to_id,
+      priority: data.priority,
+      attachments: data.attachments.length > 0 ? data.attachments : null,
+      created_by_id: data.created_by_id,
+      issue_status: data.issue_status,
+      source: "INTERNAL_UI",
+    };
+
+    const response = await supportService.createSupportTicket(payload);
+
+    if (!response.status) {
+      throw new Error(response.errMessage || "Failed to create ticket");
+    }
+
+    toast.success("Support ticket created successfully");
     fetchTickets();
   };
 

@@ -1,6 +1,6 @@
-export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' | 'CRITICAL';
 export type TicketStatus = 'ACTIVE' | 'INACTIVE';
-export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'ESCALATED' | 'RESOLVED' | 'CLOSED';
 export type TicketType = 'COMPLAINT' | 'SUPPORT';
 export type Category = 'TECHNICAL_ISSUE' | 'ACCOUNT_ISSUE' | 'PAYMENT_ISSUE' | 'PROPERTY_ISSUE' | 'GUEST_COMPLAINT' | 'MAINTENANCE' | 'OTHER';
 export type UserType = 'ALL' | 'GUEST' | 'STAFF';
@@ -67,7 +67,7 @@ export const priorityOptions = [
   { value: 'LOW', label: 'Low' },
   { value: 'MEDIUM', label: 'Medium' },
   { value: 'HIGH', label: 'High' },
-  { value: 'CRITICAL', label: 'Critical' },
+  { value: 'URGENT', label: 'Urgent' },
 ];
 
 export const categoryOptions = [
@@ -89,16 +89,27 @@ export const typeOptions = [
 export const issueStatusOptions = [
   { value: 'OPEN', label: 'Open' },
   { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'RESOLVED', label: 'Resolved' },
+  { value: 'ESCALATED', label: 'Escalated' },
   { value: 'CLOSED', label: 'Closed' },
 ];
 
 export const ticketTypeOptions = [
   { value: 'COMPLAINT', label: 'Complaint' },
-  { value: 'INQUIRY', label: 'Inquiry' },
-  { value: 'REQUEST', label: 'Request' },
-  { value: 'FEEDBACK', label: 'Feedback' },
+  { value: 'SUPPORT', label: 'Support' },
 ];
+
+export class CreateIssuePayload {
+  issue: string;
+  type: TicketType;
+  description?: string | null;
+  property_id?: number | null;
+  assigned_to_id?: number | null;
+  priority?: Priority;
+  attachments?: string[] | null;
+  created_by_id: number;
+  issue_status?: IssueStatus;
+  source?: string;
+}
 
 
 export class ListSupportTicketsPayload {

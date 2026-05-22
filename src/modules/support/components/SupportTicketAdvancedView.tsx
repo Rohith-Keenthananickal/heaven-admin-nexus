@@ -105,6 +105,7 @@ const getPriorityBadge = (priority: Priority) => {
     LOW: { className: "bg-muted text-muted-foreground", label: "Low Priority" },
     MEDIUM: { className: "bg-info/10 text-info border-info/20", label: "Medium Priority" },
     HIGH: { className: "bg-warning/10 text-warning border-warning/20", label: "High Priority" },
+    URGENT: { className: "bg-destructive/10 text-destructive border-destructive/20", label: "Urgent" },
     CRITICAL: { className: "bg-destructive/10 text-destructive border-destructive/20", label: "Critical" },
   };
   return config[priority] || config.MEDIUM;
@@ -114,6 +115,7 @@ const getStatusBadge = (status: IssueStatus) => {
   const config = {
     OPEN: { icon: AlertCircle, className: "bg-warning/10 text-warning border-warning/20", label: "Open" },
     IN_PROGRESS: { icon: Clock, className: "bg-info/10 text-info border-info/20", label: "In Progress" },
+    ESCALATED: { icon: TrendingUp, className: "bg-destructive/10 text-destructive border-destructive/20", label: "Escalated" },
     RESOLVED: { icon: CheckCircle2, className: "bg-success/10 text-success border-success/20", label: "Resolved" },
     CLOSED: { icon: XCircle, className: "bg-muted text-muted-foreground", label: "Closed" },
   };

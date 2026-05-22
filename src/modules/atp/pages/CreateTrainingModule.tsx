@@ -316,7 +316,7 @@ export default function CreateTrainingModule() {
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">minutes</span>
                     </div>
                   </div>
-                  <div className="flex items-end gap-4 pb-2">
+                  {/* <div className="flex items-end gap-4 pb-2">
                     <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
                       <Switch
                         id="active"
@@ -333,7 +333,7 @@ export default function CreateTrainingModule() {
                         )}
                       />
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </CardContent>
             </Card>

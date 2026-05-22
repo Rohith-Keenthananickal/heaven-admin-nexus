@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, type ComponentType } from "react";
 import { Button } from "@/modules/shared/components/ui/button";
 import { Input } from "@/modules/shared/components/ui/input";
 import { Label } from "@/modules/shared/components/ui/label";
@@ -21,12 +21,13 @@ import {
 import { Badge } from "@/modules/shared/components/ui/badge";
 import {
   Upload,
-  X,
   FileText,
   Image as ImageIcon,
   File,
   Trash2,
+  Building2,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/modules/shared/components/ui/avatar";
 import {
   Priority,
   IssueStatus,
@@ -36,49 +37,37 @@ import {
   ticketTypeOptions,
 } from "../models/support.models";
 import { cn } from "@/modules/shared/lib/utils";
+import { authService } from "@/modules/auth/services/authService";
+import { supportService, PropertyOption } from "../services/Support.service";
+import AtpService from "@/modules/atp/services/atp.service";
+import { uploadService } from "@/modules/shared/services/upload.service";
+import { User } from "@/modules/auth/models/auth.models";
+import { GetAllAreaCoordinatorsPayload } from "@/modules/atp/models/atp.models";
+import { toast } from "sonner";
 
 interface CreateTicketFormData {
   issue: string;
   type: TicketType;
   description: string;
-  property_id: number;
-  assigned_to_id: number;
+  property_id?: number;
+  assigned_to_id?: number;
   priority: Priority;
   attachments: File[];
   created_by_id: number;
   issue_status: IssueStatus;
 }
 
-interface Property {
-  id: number;
-  name: string;
-}
-
-interface User {
-  id: number;
-  name: string;
-  email?: string;
-}
-
-// Mock data for dropdowns
-const mockProperties: Property[] = [
-  { id: 1, name: "Grand Hotel Marina" },
-  { id: 2, name: "Sunset Beach Resort" },
-  { id: 3, name: "Mountain View Lodge" },
-  { id: 4, name: "City Center Hotel" },
-  { id: 5, name: "Riverside Inn" },
-];
-
-const mockUsers: User[] = [
-  { id: 1, name: "John Maintenance", email: "john@example.com" },
-  { id: 2, name: "Lisa Reservations", email: "lisa@example.com" },
-  { id: 3, name: "Mike Finance", email: "mike@example.com" },
-  { id: 4, name: "Sarah Operations", email: "sarah@example.com" },
-  { id: 5, name: "David Wilson", email: "david@example.com" },
-  { id: 6, name: "Emma Brown", email: "emma@example.com" },
-  { id: 7, name: "Robert Taylor", email: "robert@example.com" },
-  { id: 8, name: "Tech Support Team", email: "tech@example.com" },
-];
+const initialFormData: CreateTicketFormData = {
+  issue: "",
+  type: "SUPPORT",
+  description: "",
+  property_id: undefined,
+  assigned_to_id: undefined,
+  priority: "MEDIUM",
+  attachments: [],
+  created_by_id: 0,
+  issue_status: "OPEN",
+};
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -86,65 +75,150 @@ interface CreateTicketModalProps {
   onSubmit?: (data: Omit<CreateTicketFormData, "attachments"> & { attachments: string[] }) => Promise<void>;
 }
 
+function getUserAvatarUrl(user: User): string {
+  if (user.profile_image?.trim()) return user.profile_image.trim();
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.full_name || String(user.id))}`;
+}
+
+function getPropertyImageUrl(property: PropertyOption): string | undefined {
+  if (property.cover_image?.trim()) return property.cover_image.trim();
+  return undefined;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function SelectOptionRow({
+  imageUrl,
+  label,
+  fallback,
+  fallbackIcon: FallbackIcon,
+  compact = false,
+}: {
+  imageUrl?: string;
+  label: string;
+  fallback: string;
+  fallbackIcon?: ComponentType<{ className?: string }>;
+  compact?: boolean;
+}) {
+  const avatarSize = compact ? "h-6 w-6" : "h-8 w-8";
+  const iconSize = compact ? "h-3 w-3" : "h-4 w-4";
+
+  return (
+    <div className="flex flex-row items-center gap-2 min-w-0 flex-1 overflow-hidden">
+      <Avatar className={cn(avatarSize, "shrink-0")}>
+        {imageUrl ? <AvatarImage src={imageUrl} alt={label} /> : null}
+        <AvatarFallback className="text-xs bg-muted">
+          {FallbackIcon ? <FallbackIcon className={cn(iconSize, "text-muted-foreground")} /> : fallback}
+        </AvatarFallback>
+      </Avatar>
+      <span className="truncate text-sm leading-none">{label}</span>
+    </div>
+  );
+}
+
 export function CreateTicketModal({ isOpen, onClose, onSubmit }: CreateTicketModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<CreateTicketFormData>({
-    issue: "",
-    type: "COMPLAINT",
-    description: "",
-    property_id: 0,
-    assigned_to_id: 0,
-    priority: "MEDIUM",
-    attachments: [],
-    created_by_id: 0,
-    issue_status: "OPEN",
-  });
+  const [formData, setFormData] = useState<CreateTicketFormData>(initialFormData);
   const [isDragging, setIsDragging] = useState(false);
+  const [properties, setProperties] = useState<PropertyOption[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const currentUserId = authService.getCurrentUserId();
+    setFormData((prev) => ({
+      ...initialFormData,
+      created_by_id: currentUserId ?? 0,
+    }));
+
+    const loadOptions = async () => {
+      setLoadingOptions(true);
+      try {
+        const [propertyList, usersResponse] = await Promise.all([
+          supportService.searchProperties(),
+          AtpService.getAllAreaCoordinators({
+            user_type: ["ADMIN", "AREA_COORDINATOR", "HOST"] as unknown as GetAllAreaCoordinatorsPayload["user_type"],
+            limit: 100,
+          }),
+        ]);
+
+        setProperties(propertyList);
+
+        if (usersResponse.status && Array.isArray(usersResponse.data)) {
+          setUsers(usersResponse.data);
+        } else {
+          setUsers([]);
+        }
+      } catch (error) {
+        console.error("Error loading ticket form options:", error);
+        toast.error("Failed to load properties or users");
+      } finally {
+        setLoadingOptions(false);
+      }
+    };
+
+    loadOptions();
+  }, [isOpen]);
 
   const handleSubmit = async () => {
-    if (!formData.issue || !formData.description || !formData.property_id || !formData.assigned_to_id || !formData.created_by_id) {
+    if (!formData.issue.trim() || !formData.description.trim()) {
+      toast.error("Please enter an issue title and description");
+      return;
+    }
+    if (!formData.property_id) {
+      toast.error("Please select a property");
+      return;
+    }
+    if (!formData.assigned_to_id) {
+      toast.error("Please select who this ticket is assigned to");
+      return;
+    }
+    if (!formData.created_by_id) {
+      toast.error("You must be signed in to create a ticket");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Convert File objects to URLs/names for API
       const attachmentUrls = await Promise.all(
-        formData.attachments.map(async (file) => {
-          // In a real implementation, upload the file and get the URL
-          // For now, we'll use the file name
-          return file.name;
-        })
+        formData.attachments.map((file) =>
+          uploadService.uploadFile(file, file.type.startsWith("image/") ? "image" : "document")
+        )
       );
 
       const submitData = {
-        ...formData,
+        issue: formData.issue.trim(),
+        type: formData.type,
+        description: formData.description.trim(),
+        property_id: formData.property_id,
+        assigned_to_id: formData.assigned_to_id,
+        priority: formData.priority,
+        created_by_id: formData.created_by_id,
+        issue_status: formData.issue_status,
         attachments: attachmentUrls,
       };
 
       if (onSubmit) {
         await onSubmit(submitData);
-      } else {
-        // Default behavior
-        console.log("Creating ticket:", submitData);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
-      // Reset form
-      setFormData({
-        issue: "",
-        type: "COMPLAINT",
-        description: "",
-        property_id: 0,
-        assigned_to_id: 0,
-        priority: "MEDIUM",
-        attachments: [],
-        created_by_id: 0,
-        issue_status: "OPEN",
-      });
+      setFormData(initialFormData);
       onClose();
     } catch (error) {
       console.error("Error creating ticket:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to create ticket. Please try again.";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -217,10 +291,22 @@ export function CreateTicketModal({ isOpen, onClose, onSubmit }: CreateTicketMod
     return (bytes / (1024 * 1024)).toFixed(2) + " MB";
   };
 
-  const isFormValid = formData.issue && formData.description && formData.property_id && formData.assigned_to_id && formData.created_by_id;
+  const isFormValid =
+    formData.issue.trim() &&
+    formData.description.trim();
+
+  const selectedProperty = properties.find((p) => p.id === formData.property_id);
+  const selectedUser = users.find((u) => u.id === formData.assigned_to_id);
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setFormData(initialFormData);
+      onClose();
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Support Ticket</DialogTitle>
@@ -297,16 +383,41 @@ export function CreateTicketModal({ isOpen, onClose, onSubmit }: CreateTicketMod
             <div className="space-y-2">
               <Label htmlFor="property_id">Property *</Label>
               <Select
-                value={formData.property_id.toString()}
-                onValueChange={(value) => setFormData({ ...formData, property_id: parseInt(value) })}
+                value={formData.property_id ? formData.property_id.toString() : undefined}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, property_id: parseInt(value, 10) })
+                }
+                disabled={loadingOptions}
               >
-                <SelectTrigger id="property_id">
-                  <SelectValue placeholder="Select property" />
+                <SelectTrigger
+                  id="property_id"
+                  className="h-10 py-0 gap-2 overflow-hidden [&>span]:line-clamp-none"
+                >
+                  {selectedProperty ? (
+                    <SelectOptionRow
+                      compact
+                      imageUrl={getPropertyImageUrl(selectedProperty)}
+                      label={selectedProperty.property_name || "Unnamed property"}
+                      fallback={getInitials(selectedProperty.property_name || "Property")}
+                      fallbackIcon={Building2}
+                    />
+                  ) : (
+                    <SelectValue placeholder={loadingOptions ? "Loading..." : "Select property"} />
+                  )}
                 </SelectTrigger>
                 <SelectContent>
-                  {mockProperties.map((property) => (
-                    <SelectItem key={property.id} value={property.id.toString()}>
-                      {property.name}
+                  {properties.map((property) => (
+                    <SelectItem
+                      key={property.id}
+                      value={property.id.toString()}
+                      className="py-2 pl-3 pr-2 focus:bg-accent [&>span:first-child]:hidden"
+                    >
+                      <SelectOptionRow
+                        imageUrl={getPropertyImageUrl(property)}
+                        label={property.property_name || "Unnamed property"}
+                        fallback={getInitials(property.property_name || "Property")}
+                        fallbackIcon={Building2}
+                      />
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -315,16 +426,39 @@ export function CreateTicketModal({ isOpen, onClose, onSubmit }: CreateTicketMod
             <div className="space-y-2">
               <Label htmlFor="assigned_to_id">Assigned To *</Label>
               <Select
-                value={formData.assigned_to_id.toString()}
-                onValueChange={(value) => setFormData({ ...formData, assigned_to_id: parseInt(value) })}
+                value={formData.assigned_to_id ? formData.assigned_to_id.toString() : undefined}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, assigned_to_id: parseInt(value, 10) })
+                }
+                disabled={loadingOptions}
               >
-                <SelectTrigger id="assigned_to_id">
-                  <SelectValue placeholder="Select user" />
+                <SelectTrigger
+                  id="assigned_to_id"
+                  className="h-10 py-0 gap-2 overflow-hidden [&>span]:line-clamp-none"
+                >
+                  {selectedUser ? (
+                    <SelectOptionRow
+                      compact
+                      imageUrl={getUserAvatarUrl(selectedUser)}
+                      label={selectedUser.full_name}
+                      fallback={getInitials(selectedUser.full_name)}
+                    />
+                  ) : (
+                    <SelectValue placeholder={loadingOptions ? "Loading..." : "Select user"} />
+                  )}
                 </SelectTrigger>
                 <SelectContent>
-                  {mockUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.name}
+                  {users.map((user) => (
+                    <SelectItem
+                      key={user.id}
+                      value={user.id.toString()}
+                      className="py-2 pl-3 pr-2 focus:bg-accent [&>span:first-child]:hidden"
+                    >
+                      <SelectOptionRow
+                        imageUrl={getUserAvatarUrl(user)}
+                        label={user.full_name}
+                        fallback={getInitials(user.full_name)}
+                      />
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -332,44 +466,24 @@ export function CreateTicketModal({ isOpen, onClose, onSubmit }: CreateTicketMod
             </div>
           </div>
 
-          {/* Created By ID and Issue Status */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="created_by_id">Created By *</Label>
-              <Select
-                value={formData.created_by_id.toString()}
-                onValueChange={(value) => setFormData({ ...formData, created_by_id: parseInt(value) })}
-              >
-                <SelectTrigger id="created_by_id">
-                  <SelectValue placeholder="Select user" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="issue_status">Issue Status *</Label>
-              <Select
-                value={formData.issue_status}
-                onValueChange={(value: IssueStatus) => setFormData({ ...formData, issue_status: value })}
-              >
-                <SelectTrigger id="issue_status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {issueStatusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Issue Status */}
+          <div className="space-y-2">
+            <Label htmlFor="issue_status">Issue Status *</Label>
+            <Select
+              value={formData.issue_status}
+              onValueChange={(value: IssueStatus) => setFormData({ ...formData, issue_status: value })}
+            >
+              <SelectTrigger id="issue_status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {issueStatusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Attachments - Drag and Drop */}
