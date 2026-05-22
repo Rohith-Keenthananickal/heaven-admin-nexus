@@ -222,9 +222,9 @@ export function SupportTickets() {
 
   return (
     <DashboardLayout showHeader={false}>
-      <div className="space-y-6">
+      <div className="flex h-[calc(100vh-3rem)] min-h-0 flex-col gap-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Support Tickets</h1>
             <p className="text-muted-foreground mt-1">
@@ -254,7 +254,7 @@ export function SupportTickets() {
         </div>
 
         {/* Filters */}
-        <Card className="border-border/50">
+        <Card className="shrink-0 border-border/50">
           <CardContent className="p-4">
             <div className="flex flex-col lg:flex-row gap-4">
               {/* Search */}
@@ -298,7 +298,7 @@ export function SupportTickets() {
                   </SelectContent>
                 </Select>
 
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                {/* <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="w-[160px]">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
@@ -310,7 +310,7 @@ export function SupportTickets() {
                       </SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
+                </Select> */}
 
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
                   <SelectTrigger className="w-[120px]">
@@ -335,7 +335,7 @@ export function SupportTickets() {
         </Card>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid shrink-0 grid-cols-2 gap-4 md:grid-cols-4">
           <Card className="border-border/50">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-warning/10">
@@ -392,8 +392,8 @@ export function SupportTickets() {
 
         {/* Loading State */}
         {loading && (
-          <Card className="border-border/50">
-            <CardContent className="p-12 flex items-center justify-center">
+          <Card className="flex min-h-0 flex-1 flex-col border-border/50">
+            <CardContent className="flex flex-1 items-center justify-center p-12">
               <div className="flex flex-col items-center gap-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-muted-foreground">Loading tickets...</p>
@@ -404,8 +404,8 @@ export function SupportTickets() {
 
         {/* Error State */}
         {error && !loading && (
-          <Card className="border-border/50">
-            <CardContent className="p-12 flex items-center justify-center">
+          <Card className="flex min-h-0 flex-1 flex-col border-border/50">
+            <CardContent className="flex flex-1 items-center justify-center p-12">
               <div className="flex flex-col items-center gap-4">
                 <AlertCircle className="h-8 w-8 text-destructive" />
                 <p className="text-destructive">{error}</p>
@@ -419,15 +419,16 @@ export function SupportTickets() {
 
         {/* Tickets List */}
         {!loading && !error && (
-          <>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {viewMode === "table" ? (
-              <Card className="border-border/50">
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
+              <Card className="flex min-h-0 flex-1 flex-col overflow-hidden border-border/50">
+                <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+                  <div className="min-h-0 flex-1 overflow-auto">
+                  <Table className="table-fixed">
+                    <TableHeader className="sticky top-0 z-10 bg-background">
                       <TableRow className="hover:bg-transparent">
                         <TableHead className="w-[100px]">Code</TableHead>
-                        <TableHead className="w-[200px]">Issue</TableHead>
+                        <TableHead className="max-w-[200px] w-[200px]">Issue</TableHead>
                         <TableHead>Property</TableHead>
                         <TableHead>Priority</TableHead>
                         <TableHead>Status</TableHead>
@@ -458,21 +459,25 @@ export function SupportTickets() {
                               <TableCell className="font-mono text-sm font-medium text-primary">
                                 {ticket.issue_code}
                               </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium text-foreground line-clamp-1">
+                              <TableCell className="max-w-[200px] w-[200px] overflow-hidden">
+                                <div className="flex min-w-0 flex-col">
+                                  <span className="truncate font-medium text-foreground">
                                     {ticket.issue}
                                   </span>
-                                  <span className="text-xs text-muted-foreground line-clamp-1">
+                                  <span className="truncate text-xs text-muted-foreground">
                                     {ticket.description}
                                   </span>
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm">{ticket.property_name}</span>
-                                </div>
+                                  {ticket.property_name ? (
+                                    <div className="flex items-center gap-2">
+                                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm">{ticket.property_name}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground">--</span>
+                                  )}
                               </TableCell>
                               <TableCell>
                                 <Badge variant={priorityConfig.variant} className={priorityConfig.className}>
@@ -486,10 +491,14 @@ export function SupportTickets() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm">{ticket.assigned_to_name}</span>
-                                </div>
+                                {ticket.assigned_to_name ? (
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm">{ticket.assigned_to_name}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">--</span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-col">
@@ -528,10 +537,12 @@ export function SupportTickets() {
                       )}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {tickets.length === 0 ? (
                   <Card className="border-border/50 col-span-full">
                     <CardContent className="p-12 text-center text-muted-foreground">
@@ -617,13 +628,14 @@ export function SupportTickets() {
                   })
                 )}
               </div>
+              </div>
             )}
-          </>
+          </div>
         )}
 
         {/* Pagination */}
         {!loading && !error && pagination.total_pages > 0 && (
-          <div className="flex justify-center">
+          <div className="flex shrink-0 justify-center">
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
