@@ -20,7 +20,8 @@ import {
   Check, 
   X, 
   Trash2, 
-  Ban, 
+  Ban,
+  Unlock,
   FileText, 
   CreditCard, 
   Users, 
@@ -42,6 +43,7 @@ import AtpService from "../services/atp.service"
 import { User } from "@/modules/auth/models/auth.models"
 import { UpdateApprovalStatusPayload, UpdateUserStatusPayload } from "../models/atp.models"
 import { ConfirmationModal, DocumentViewer } from "@/modules/shared"
+import { formatLongDate } from "@/modules/shared/lib/formatLongDate"
 
 // Mock data for sections that don't have API endpoints yet
 const mockHostsOnboarded = [
@@ -75,6 +77,7 @@ export default function AtpAdvancedView() {
   const [showApproveModal, setShowApproveModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showBlockModal, setShowBlockModal] = useState(false)
+  const [showUnblockModal, setShowUnblockModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [rejectionReason, setRejectionReason] = useState("")
@@ -112,10 +115,10 @@ export default function AtpAdvancedView() {
     switch (status) {
       case "ACTIVE":
         return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>
-      case "SUSPENDED":
-        return <Badge className="bg-warning/10 text-warning border-warning/20">Suspended</Badge>
-      case "BANNED":
-        return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Banned</Badge>
+      case "BLOCKED":
+        return <Badge className="bg-warning/10 text-warning border-warning/20">Blocked</Badge>
+      case "DELETED":
+        return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Deleted</Badge>
       case "PENDING":
         return <Badge className="bg-secondary/10 text-secondary border-secondary/20">Pending</Badge>
       default:
@@ -239,6 +242,10 @@ export default function AtpAdvancedView() {
     setShowBlockModal(true)
   }
 
+  const handleUnblock = () => {
+    setShowUnblockModal(true)
+  }
+
   const handleDelete = () => {
     setShowDeleteModal(true)
   }
@@ -276,6 +283,44 @@ export default function AtpAdvancedView() {
       toast({
         title: "Error",
         description: "An error occurred while blocking the area coordinator.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const confirmUnblock = async () => {
+    if (!id || !atp) return
+
+    try {
+      setIsUpdating(true)
+
+      const payload: UpdateUserStatusPayload = {
+        status: 'ACTIVE'
+      }
+
+      const response = await AtpService.updateUserStatus(id, payload)
+
+      if (response.status) {
+        await fetchAreaCoordinator()
+        setShowUnblockModal(false)
+        toast({
+          title: "ATP Unblocked",
+          description: "Area coordinator has been unblocked successfully.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: response.errMessage || "Failed to unblock area coordinator.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error("Error unblocking area coordinator:", err)
+      toast({
+        title: "Error",
+        description: "An error occurred while unblocking the area coordinator.",
         variant: "destructive",
       })
     } finally {
@@ -323,6 +368,35 @@ export default function AtpAdvancedView() {
     }
   }
 
+  const hasDocumentUrl = (url?: string | null) =>
+    typeof url === "string" && url.trim().length > 0
+
+  const renderDocumentViewAction = (
+    documentUrl: string | null | undefined,
+    title: string
+  ) => {
+    if (!hasDocumentUrl(documentUrl)) {
+      return (
+        <span className="text-sm text-slate-500 dark:text-slate-400 italic">
+          Not added
+        </span>
+      )
+    }
+
+    return (
+      <DocumentViewer
+        documentUrl={documentUrl}
+        title={title}
+        trigger={
+          <Button variant="outline" size="sm" className="shadow-sm">
+            <Eye className="w-4 h-4 mr-2" />
+            View
+          </Button>
+        }
+      />
+    )
+  }
+
   // Loading state
   if (loading) {
     return (
@@ -360,6 +434,7 @@ export default function AtpAdvancedView() {
 
   const isPending = atp.area_coordinator_profile?.approval_status === "PENDING"
   const isActive = atp.status === "ACTIVE"
+  const isBlocked = atp.status === "BLOCKED"
 
   return (
     <DashboardLayout 
@@ -394,6 +469,12 @@ export default function AtpAdvancedView() {
               </Button>
             </>
           )}
+          {isBlocked && (
+            <Button onClick={handleUnblock} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+              <Unlock className="w-4 h-4 mr-2" />
+              Unblock
+            </Button>
+          )}
         </div>
       }
     >
@@ -418,7 +499,7 @@ export default function AtpAdvancedView() {
                       {atp.full_name || 'Unknown User'}
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">
-                      ID: {atp.id}
+                      ID: {atp?.area_coordinator_profile?.atp_uuid || atp.id}
                     </p>
                     <div className="flex gap-3 flex-wrap">
                       {getStatusBadge(atp.status)}
@@ -430,7 +511,7 @@ export default function AtpAdvancedView() {
                     <div className="text-center">
                       <MapPin className="w-5 h-5 text-blue-500 mx-auto mb-1" />
                       <p className="text-sm text-slate-500 dark:text-slate-400">Region</p>
-                      <p className="font-bold text-lg text-slate-900 dark:text-white">
+                      <p className="font-bold text-base text-slate-900 dark:text-white">
                         {atp.area_coordinator_profile?.region || "N/A"}
                       </p>
                       <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -516,7 +597,7 @@ export default function AtpAdvancedView() {
                         <div className="flex-1">
                           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Date of Birth</p>
                           <p className="font-semibold text-slate-900 dark:text-white">
-                            {atp.dob ? new Date(atp.dob).toLocaleDateString() : "N/A"}
+                            {atp.dob ? formatLongDate(atp.dob) : "N/A"}
                           </p>
                         </div>
                       </div>
@@ -528,7 +609,7 @@ export default function AtpAdvancedView() {
                         <div className="flex-1">
                           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Joined Date</p>
                           <p className="font-semibold text-slate-900 dark:text-white">
-                            {new Date(atp.created_at).toLocaleDateString()}
+                            {formatLongDate(atp.created_at)}
                           </p>
                         </div>
                       </div>
@@ -671,20 +752,11 @@ export default function AtpAdvancedView() {
                             </div>
                             <h4 className="font-bold text-lg">Passport Size Photo</h4>
                           </div>
-                          <DocumentViewer
-                            documentUrl={atp.area_coordinator_profile?.passport_size_photo}
-                            title="Passport Size Photo"
-                            trigger={
-                              <Button variant="outline" size="sm" className="shadow-sm">
-                                <Eye className="w-4 h-4 mr-2" />
-                                View
-                              </Button>
-                            }
-                          />
+                          {renderDocumentViewAction(
+                            atp.area_coordinator_profile?.passport_size_photo,
+                            "Passport Size Photo"
+                          )}
                         </div>
-                        <Badge className="bg-green-100 text-green-700 border-green-200 font-semibold">
-                          ✓ Verified
-                        </Badge>
                       </CardContent>
                     </Card>
                     
@@ -697,20 +769,11 @@ export default function AtpAdvancedView() {
                             </div>
                             <h4 className="font-bold text-lg">ID Proof Document</h4>
                           </div>
-                          <DocumentViewer
-                            documentUrl={atp.area_coordinator_profile?.id_proof_document}
-                            title="ID Proof Document"
-                            trigger={
-                              <Button variant="outline" size="sm" className="shadow-sm">
-                                <Eye className="w-4 h-4 mr-2" />
-                                View
-                              </Button>
-                            }
-                          />
+                          {renderDocumentViewAction(
+                            atp.area_coordinator_profile?.id_proof_document,
+                            "ID Proof Document"
+                          )}
                         </div>
-                        <Badge className="bg-green-100 text-green-700 border-green-200 font-semibold">
-                          ✓ Verified
-                        </Badge>
                       </CardContent>
                     </Card>
                   </div>
@@ -725,20 +788,11 @@ export default function AtpAdvancedView() {
                             </div>
                             <h4 className="font-bold text-lg">Address Proof Document</h4>
                           </div>
-                          <DocumentViewer
-                            documentUrl={atp.area_coordinator_profile?.address_proof_document}
-                            title="Address Proof Document"
-                            trigger={
-                              <Button variant="outline" size="sm" className="shadow-sm">
-                                <Eye className="w-4 h-4 mr-2" />
-                                View
-                              </Button>
-                            }
-                          />
+                          {renderDocumentViewAction(
+                            atp.area_coordinator_profile?.address_proof_document,
+                            "Address Proof Document"
+                          )}
                         </div>
-                        <Badge className="bg-green-100 text-green-700 border-green-200 font-semibold">
-                          ✓ Verified
-                        </Badge>
                       </CardContent>
                     </Card>
                     
@@ -751,20 +805,11 @@ export default function AtpAdvancedView() {
                             </div>
                             <h4 className="font-bold text-lg">PAN Card</h4>
                           </div>
-                          <DocumentViewer
-                            documentUrl={atp.area_coordinator_profile?.id_proof_document}
-                            title="PAN Card"
-                            trigger={
-                              <Button variant="outline" size="sm" className="shadow-sm">
-                                <Eye className="w-4 h-4 mr-2" />
-                                View
-                              </Button>
-                            }
-                          />
+                          {renderDocumentViewAction(
+                            atp.area_coordinator_profile?.id_proof_document,
+                            "PAN Card"
+                          )}
                         </div>
-                        <Badge className="bg-amber-100 text-amber-700 border-amber-200 font-semibold">
-                          ⏳ Pending Verification
-                        </Badge>
                       </CardContent>
                     </Card>
                   </div>
@@ -787,7 +832,7 @@ export default function AtpAdvancedView() {
                       <div className="space-y-6">
                         <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Bank Name</p>
-                          <p className="font-bold text-lg text-slate-900 dark:text-white">
+                          <p className="font-bold text-base text-slate-900 dark:text-white">
                             {atp.area_coordinator_profile?.bank_details?.bank_name || "N/A"}
                           </p>
                         </div>
@@ -799,7 +844,7 @@ export default function AtpAdvancedView() {
                         </div>
                         <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Account Number</p>
-                          <p className="font-bold text-lg text-slate-900 dark:text-white font-mono">
+                          <p className="font-bold text-lg text-slate-900 dark:text-white">
                             {atp.area_coordinator_profile?.bank_details?.account_number 
                               ? `••••••••••••${atp.area_coordinator_profile.bank_details.account_number.slice(-4)}`
                               : "N/A"
@@ -810,7 +855,7 @@ export default function AtpAdvancedView() {
                       <div className="space-y-6">
                         <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">IFSC Code</p>
-                          <p className="font-bold text-lg text-slate-900 dark:text-white font-mono">
+                          <p className="font-bold text-base text-slate-900 dark:text-white">
                             {atp.area_coordinator_profile?.bank_details?.ifsc_code || "N/A"}
                           </p>
                         </div>
@@ -969,7 +1014,7 @@ export default function AtpAdvancedView() {
                               />
                               {module.completedDate && (
                                 <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
-                                  ✓ Completed on {new Date(module.completedDate).toLocaleDateString()}
+                                  ✓ Completed on {formatLongDate(module.completedDate)}
                                 </p>
                               )}
                             </div>
@@ -1051,6 +1096,22 @@ export default function AtpAdvancedView() {
         cancelVariant="outline"
         isLoading={isUpdating}
         icon={<Ban className="w-8 h-8 text-destructive mx-auto" />}
+        size="md"
+      />
+
+      {/* Unblock Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showUnblockModal}
+        onClose={() => setShowUnblockModal(false)}
+        onConfirm={confirmUnblock}
+        title="Unblock Area Coordinator"
+        description={`Are you sure you want to unblock ${atp?.full_name || 'this user'}? They will regain access to the platform and resume their activities.`}
+        confirmText="Unblock"
+        cancelText="Cancel"
+        confirmVariant="default"
+        cancelVariant="outline"
+        isLoading={isUpdating}
+        icon={<Unlock className="w-8 h-8 text-emerald-600 mx-auto" />}
         size="md"
       />
 

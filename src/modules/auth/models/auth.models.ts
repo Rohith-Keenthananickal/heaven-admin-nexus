@@ -75,6 +75,7 @@ export interface LoginResponse {
   
   export interface AreaCoordinatorProfile {
     region: string
+    atp_uuid: string
     assigned_properties: number
     approval_status: string
     approval_date: string

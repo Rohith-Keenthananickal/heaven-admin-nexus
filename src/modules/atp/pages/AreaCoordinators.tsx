@@ -25,6 +25,7 @@ import { Search, Filter, Loader2 } from "lucide-react"
 import AtpService from "../services/atp.service"
 import { GetAllAreaCoordinatorsPayload } from "../models/atp.models"
 import { User } from "@/modules/auth/models/auth.models"
+import { formatLongDate } from "@/modules/shared/lib/formatLongDate"
 
 export default function AreaCoordinators() {
   const navigate = useNavigate()
@@ -88,14 +89,14 @@ export default function AreaCoordinators() {
     switch (status) {
       case "ACTIVE":
         return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>
-      case "INACTIVE":
-        return <Badge className="bg-warning/10 text-warning border-warning/20">Suspended</Badge>
+      case "BLOCKED":
+        return <Badge className="bg-warning/10 text-warning border-warning/20">Blocked</Badge>
       case "DELETED":
-        return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Banned</Badge>
+        return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Deleted</Badge>
       default:
         return <Badge variant="secondary">{status}</Badge>
+        }
     }
-  }
 
   const getApprovalBadge = (status: string) => {
     switch (status) {
@@ -203,8 +204,8 @@ export default function AreaCoordinators() {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                  <SelectItem value="BANNED">Banned</SelectItem>
+                  <SelectItem value="BLOCKED">Blocked</SelectItem>
+                  <SelectItem value="DELETED">Deleted</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -270,7 +271,7 @@ export default function AreaCoordinators() {
                           </Avatar>
                           <div>
                             <div className="font-medium">{atp.full_name}</div>
-                            <div className="text-sm text-muted-foreground">ID: {atp.id}</div>
+                            <div className="text-sm text-muted-foreground">ID: {atp?.area_coordinator_profile?.atp_uuid || atp.id}</div>
                           </div>
                         </div>
                       </TableCell>
@@ -302,7 +303,7 @@ export default function AreaCoordinators() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {new Date(atp.created_at).toLocaleDateString()}
+                          {formatLongDate(atp.created_at)}
                         </div>
                       </TableCell>
                      
