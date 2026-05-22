@@ -32,9 +32,18 @@ import {
   Mail,
   Calendar,
   Building,
-  Download,
   Eye,
-  Loader2
+  Loader2,
+  Shield,
+  Briefcase,
+  Home,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  ChevronRight,
+  Wallet,
+  BookOpen
 } from "lucide-react"
 import { Textarea } from "@/modules/shared/components/ui/textarea"
 import { Label } from "@/modules/shared/components/ui/label"
@@ -44,8 +53,8 @@ import { User } from "@/modules/auth/models/auth.models"
 import { UpdateApprovalStatusPayload, UpdateUserStatusPayload } from "../models/atp.models"
 import { ConfirmationModal, DocumentViewer } from "@/modules/shared"
 import { formatLongDate } from "@/modules/shared/lib/formatLongDate"
+import { cn } from "@/modules/shared/lib/utils"
 
-// Mock data for sections that don't have API endpoints yet
 const mockHostsOnboarded = [
   { id: 1, name: "Hotel Grand Plaza", location: "Karol Bagh", status: "Active", properties: 3, joinDate: "2024-02-15" },
   { id: 2, name: "Comfort Inn", location: "Paharganj", status: "Active", properties: 2, joinDate: "2024-03-01" },
@@ -65,6 +74,26 @@ const mockTrainingModules = [
   { module: "Conflict Resolution", progress: 60, completedDate: null },
   { module: "Advanced Analytics", progress: 0, completedDate: null }
 ]
+
+interface InfoItemProps {
+  icon: React.ReactNode
+  label: string
+  value: React.ReactNode
+}
+
+function InfoItem({ icon, label, value }: InfoItemProps) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="p-2 rounded-lg bg-primary/5 text-primary shrink-0">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-muted-foreground font-medium">{label}</p>
+        <p className="text-sm font-semibold text-foreground mt-0.5">{value || "N/A"}</p>
+      </div>
+    </div>
+  )
+}
 
 export default function AtpAdvancedView() {
   const { id } = useParams()
@@ -104,7 +133,6 @@ export default function AtpAdvancedView() {
     }
   }, [id])
 
-  // Fetch ATP data on component mount
   useEffect(() => {
     if (id) {
       fetchAreaCoordinator()
@@ -112,31 +140,62 @@ export default function AtpAdvancedView() {
   }, [id, fetchAreaCoordinator])
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>
-      case "BLOCKED":
-        return <Badge className="bg-warning/10 text-warning border-warning/20">Blocked</Badge>
-      case "DELETED":
-        return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Deleted</Badge>
-      case "PENDING":
-        return <Badge className="bg-secondary/10 text-secondary border-secondary/20">Pending</Badge>
-      default:
-        return <Badge variant="secondary">{status}</Badge>
+    const configs: Record<string, { icon: React.ReactNode; className: string; label: string }> = {
+      ACTIVE: { 
+        icon: <CheckCircle2 className="w-3 h-3" />, 
+        className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+        label: "Active"
+      },
+      BLOCKED: { 
+        icon: <Ban className="w-3 h-3" />, 
+        className: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+        label: "Blocked"
+      },
+      DELETED: { 
+        icon: <XCircle className="w-3 h-3" />, 
+        className: "bg-red-500/10 text-red-600 border-red-500/20",
+        label: "Deleted"
+      },
+      PENDING: { 
+        icon: <Clock className="w-3 h-3" />, 
+        className: "bg-slate-500/10 text-slate-600 border-slate-500/20",
+        label: "Pending"
+      }
     }
+    const config = configs[status] || configs.PENDING
+    return (
+      <Badge variant="outline" className={cn("gap-1 font-medium text-xs", config.className)}>
+        {config.icon}
+        {config.label}
+      </Badge>
+    )
   }
 
   const getApprovalBadge = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return <Badge className="bg-success/10 text-success border-success/20">Approved</Badge>
-      case "PENDING":
-        return <Badge className="bg-warning/10 text-warning border-warning/20">Pending</Badge>
-      case "REJECTED":
-        return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Rejected</Badge>
-      default:
-        return <Badge variant="secondary">{status}</Badge>
+    const configs: Record<string, { icon: React.ReactNode; className: string; label: string }> = {
+      APPROVED: { 
+        icon: <CheckCircle2 className="w-3 h-3" />, 
+        className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+        label: "Approved"
+      },
+      PENDING: { 
+        icon: <Clock className="w-3 h-3" />, 
+        className: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+        label: "Pending"
+      },
+      REJECTED: { 
+        icon: <XCircle className="w-3 h-3" />, 
+        className: "bg-red-500/10 text-red-600 border-red-500/20",
+        label: "Rejected"
+      }
     }
+    const config = configs[status] || configs.PENDING
+    return (
+      <Badge variant="outline" className={cn("gap-1 font-medium text-xs", config.className)}>
+        {config.icon}
+        {config.label}
+      </Badge>
+    )
   }
 
   const handleApprove = () => {
@@ -161,7 +220,6 @@ export default function AtpAdvancedView() {
       const response = await AtpService.updateApprovalStatus(id, payload)
       
       if (response.status) {
-        // Fetch updated user details after successful status update
         await fetchAreaCoordinator()
         setShowApproveModal(false)
         toast({
@@ -210,7 +268,6 @@ export default function AtpAdvancedView() {
       const response = await AtpService.updateApprovalStatus(id, payload)
       
       if (response.status) {
-        // Fetch updated user details after successful status update
         await fetchAreaCoordinator()
         setShowRejectModal(false)
         setRejectionReason("")
@@ -263,7 +320,6 @@ export default function AtpAdvancedView() {
       const response = await AtpService.updateUserStatus(id, payload)
       
       if (response.status) {
-        // Fetch updated user details after successful status update
         await fetchAreaCoordinator()
         setShowBlockModal(false)
         toast({
@@ -341,7 +397,6 @@ export default function AtpAdvancedView() {
       const response = await AtpService.updateUserStatus(id, payload)
       
       if (response.status) {
-        // Fetch updated user details after successful status update
         await fetchAreaCoordinator()
         setShowDeleteModal(false)
         toast({
@@ -371,61 +426,87 @@ export default function AtpAdvancedView() {
   const hasDocumentUrl = (url?: string | null) =>
     typeof url === "string" && url.trim().length > 0
 
-  const renderDocumentViewAction = (
+  const renderDocumentCard = (
     documentUrl: string | null | undefined,
-    title: string
+    title: string,
+    icon: React.ReactNode
   ) => {
-    if (!hasDocumentUrl(documentUrl)) {
-      return (
-        <span className="text-sm text-slate-500 dark:text-slate-400 italic">
-          Not added
-        </span>
-      )
-    }
-
+    const hasDocument = hasDocumentUrl(documentUrl)
+    
     return (
-      <DocumentViewer
-        documentUrl={documentUrl}
-        title={title}
-        trigger={
-          <Button variant="outline" size="sm" className="shadow-sm">
-            <Eye className="w-4 h-4 mr-2" />
-            View
-          </Button>
-        }
-      />
+      <Card className={cn(
+        "transition-all",
+        hasDocument ? "border-emerald-200 bg-emerald-50/30" : "border-dashed"
+      )}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2.5 rounded-lg",
+                hasDocument 
+                  ? "bg-emerald-100 text-emerald-600" 
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {icon}
+              </div>
+              <div>
+                <p className="font-medium text-sm">{title}</p>
+                <p className={cn(
+                  "text-xs mt-0.5",
+                  hasDocument ? "text-emerald-600" : "text-muted-foreground"
+                )}>
+                  {hasDocument ? "Document uploaded" : "Not uploaded"}
+                </p>
+              </div>
+            </div>
+            {hasDocument ? (
+              <DocumentViewer
+                documentUrl={documentUrl}
+                title={title}
+                trigger={
+                  <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                    <Eye className="w-3.5 h-3.5" />
+                    View
+                  </Button>
+                }
+              />
+            ) : (
+              <Badge variant="secondary" className="text-xs">Missing</Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
-  // Loading state
   if (loading) {
     return (
-      <DashboardLayout title="Loading ATP Details...">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading area coordinator details...</span>
-          </div>
+      <DashboardLayout title="Loading...">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading details...</p>
         </div>
       </DashboardLayout>
     )
   }
 
-  // Error state
   if (error || !atp) {
     return (
-      <DashboardLayout title="Error Loading ATP Details">
-        <div className="flex items-center justify-center h-64">
+      <DashboardLayout title="Error">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+          <div className="p-3 rounded-full bg-destructive/10">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+          </div>
           <div className="text-center">
-            <p className="text-destructive mb-4">{error || "Area coordinator not found"}</p>
-            <div className="flex gap-2 justify-center">
-              <Button onClick={fetchAreaCoordinator} variant="outline">
-                Try Again
-              </Button>
-              <Button onClick={() => navigate("/area-coordinators")} variant="outline">
-                Back to List
-              </Button>
-            </div>
+            <p className="font-medium">{error || "Area coordinator not found"}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={fetchAreaCoordinator} variant="outline" size="sm">
+              Try Again
+            </Button>
+            <Button onClick={() => navigate("/area-coordinators")} size="sm">
+              Back to List
+            </Button>
           </div>
         </div>
       </DashboardLayout>
@@ -436,601 +517,514 @@ export default function AtpAdvancedView() {
   const isActive = atp.status === "ACTIVE"
   const isBlocked = atp.status === "BLOCKED"
 
+  const totalEarnings = mockEarnings.reduce((acc, e) => acc + e.total, 0)
+  const completedModules = mockTrainingModules.filter(m => m.progress === 100).length
+  const overallProgress = Math.round(mockTrainingModules.reduce((acc, m) => acc + m.progress, 0) / mockTrainingModules.length)
+
   return (
     <DashboardLayout 
-      title={`ATP Details - ${atp.full_name || 'Unknown User'}`}
+      title="Area Coordinator Details"
       action={
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => navigate("/area-coordinators")} className="shadow-sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to List
-          </Button>
-          {isPending && (
-            <>
-              <Button onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
-                <Check className="w-4 h-4 mr-2" />
-                Approve
-              </Button>
-              <Button variant="destructive" onClick={handleReject} className="shadow-sm">
-                <X className="w-4 h-4 mr-2" />
-                Reject
-              </Button>
-            </>
-          )}
-          {isActive && (
-            <>
-              <Button variant="outline" onClick={handleBlock} className="border-amber-300 text-amber-700 hover:bg-amber-50 shadow-sm">
-                <Ban className="w-4 h-4 mr-2" />
-                Block
-              </Button>
-              <Button variant="destructive" onClick={handleDelete} className="shadow-sm">
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </Button>
-            </>
-          )}
-          {isBlocked && (
-            <Button onClick={handleUnblock} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
-              <Unlock className="w-4 h-4 mr-2" />
-              Unblock
-            </Button>
-          )}
-        </div>
+        <Button variant="ghost" size="sm" onClick={() => navigate("/area-coordinators")} className="gap-1.5">
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
       }
     >
-      <div className="space-y-8">
-        {/* Enhanced Header Card with Gradient Background */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-900">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-start gap-8">
-              <div className="flex-shrink-0">
-                <Avatar className="w-28 h-28 ring-4 ring-white shadow-lg">
+      <div className="space-y-6">
+        {/* Profile Header Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Profile Info */}
+              <div className="flex items-start gap-4">
+                <Avatar className="w-16 h-16 border-2 border-primary/10">
                   <AvatarImage src={atp.profile_image} alt={atp.full_name || 'User'} />
-                  <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                    {atp.full_name ? atp.full_name.split(' ').map(n => n[0]).join('') : 'U'}
+                  <AvatarFallback className="text-lg font-semibold bg-primary/5 text-primary">
+                    {atp.full_name ? atp.full_name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'U'}
                   </AvatarFallback>
                 </Avatar>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">{atp.full_name || 'Unknown User'}</h2>
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                    {atp?.area_coordinator_profile?.atp_uuid || atp.id}
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    {getStatusBadge(atp.status)}
+                    {getApprovalBadge(atp.area_coordinator_profile?.approval_status || "PENDING")}
+                  </div>
+                </div>
               </div>
-              
-              <div className="flex-1 space-y-4">
-                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-                  <div className="space-y-2">
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-                      {atp.full_name || 'Unknown User'}
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">
-                      ID: {atp?.area_coordinator_profile?.atp_uuid || atp.id}
-                    </p>
-                    <div className="flex gap-3 flex-wrap">
-                      {getStatusBadge(atp.status)}
-                      {getApprovalBadge(atp.area_coordinator_profile?.approval_status || "PENDING")}
-                    </div>
+
+              {/* Stats Grid */}
+              <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">Region</span>
                   </div>
-                  
-                  <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border">
-                    <div className="text-center">
-                      <MapPin className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Region</p>
-                      <p className="font-bold text-base text-slate-900 dark:text-white">
-                        {atp.area_coordinator_profile?.region || "N/A"}
-                      </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        {atp.area_coordinator_profile?.assigned_properties || 0} Properties
-                      </p>
-                    </div>
+                  <p className="font-bold text-foreground">{atp.area_coordinator_profile?.region || "N/A"}</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                    <Building className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">Properties</span>
                   </div>
+                  <p className="font-bold text-foreground">{atp.area_coordinator_profile?.assigned_properties || 0}</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                    <Users className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">Hosts</span>
+                  </div>
+                  <p className="font-bold text-foreground">{mockHostsOnboarded.length}</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">Training</span>
+                  </div>
+                  <p className="font-bold text-foreground">{overallProgress}%</p>
                 </div>
               </div>
             </div>
+
+            {/* Action Buttons */}
+            {(isPending || isActive || isBlocked) && (
+              <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t">
+                {isPending && (
+                  <>
+                    <Button onClick={handleApprove} size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                      <Check className="w-3.5 h-3.5" />
+                      Approve
+                    </Button>
+                    <Button onClick={handleReject} size="sm" variant="destructive" className="gap-1.5">
+                      <X className="w-3.5 h-3.5" />
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {isActive && (
+                  <>
+                    <Button onClick={handleBlock} size="sm" variant="outline" className="gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50">
+                      <Ban className="w-3.5 h-3.5" />
+                      Block User
+                    </Button>
+                    <Button onClick={handleDelete} size="sm" variant="destructive" className="gap-1.5">
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete User
+                    </Button>
+                  </>
+                )}
+                {isBlocked && (
+                  <Button onClick={handleUnblock} size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                    <Unlock className="w-3.5 h-3.5" />
+                    Unblock User
+                  </Button>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Enhanced Tabs with Better Styling */}
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-              <TabsList className="grid grid-cols-3 lg:grid-cols-6 w-full h-auto p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                <TabsTrigger value="overview" className="py-3 rounded-lg font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  <Users className="w-4 h-4 mr-2" />
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger value="documents" className="py-3 rounded-lg font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Documents
-                </TabsTrigger>
-                <TabsTrigger value="banking" className="py-3 rounded-lg font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Banking
-                </TabsTrigger>
-                <TabsTrigger value="hosts" className="py-3 rounded-lg font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  <Building className="w-4 h-4 mr-2" />
-                  Hosts
-                </TabsTrigger>
-                <TabsTrigger value="earnings" className="py-3 rounded-lg font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Earnings
-                </TabsTrigger>
-                <TabsTrigger value="training" className="py-3 rounded-lg font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  <GraduationCap className="w-4 h-4 mr-2" />
-                  Training
-                </TabsTrigger>
-              </TabsList>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="h-auto p-1 bg-muted/50">
+            {[
+              { value: "overview", icon: Users, label: "Overview" },
+              { value: "documents", icon: FileText, label: "Documents" },
+              { value: "banking", icon: CreditCard, label: "Banking" },
+              { value: "hosts", icon: Building, label: "Hosts" },
+              { value: "earnings", icon: TrendingUp, label: "Earnings" },
+              { value: "training", icon: GraduationCap, label: "Training" },
+            ].map((tab) => (
+              <TabsTrigger 
+                key={tab.value} 
+                value={tab.value} 
+                className="gap-1.5 px-3 py-2 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <tab.icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-              {/* Enhanced Overview Tab */}
-              <TabsContent value="overview" className="space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Personal Information with Enhanced Design */}
-                  <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 rounded-t-lg">
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                          <Users className="w-6 h-6 text-blue-600 dark:text-blue-300" />
-                        </div>
-                        Personal Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                          <Mail className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Email Address</p>
-                          <p className="font-semibold text-slate-900 dark:text-white break-all">{atp.email}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-4">
-                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                          <Phone className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Phone Number</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">{atp.phone_number}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-4">
-                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                          <Calendar className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Date of Birth</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            {atp.dob ? formatLongDate(atp.dob) : "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-4">
-                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                          <Calendar className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Joined Date</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            {formatLongDate(atp.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Personal Information */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    Personal Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <InfoItem icon={<Mail className="w-4 h-4" />} label="Email Address" value={atp.email} />
+                  <InfoItem icon={<Phone className="w-4 h-4" />} label="Phone Number" value={atp.phone_number} />
+                  <InfoItem icon={<Calendar className="w-4 h-4" />} label="Date of Birth" value={atp.dob ? formatLongDate(atp.dob) : "N/A"} />
+                  <InfoItem icon={<Calendar className="w-4 h-4" />} label="Joined Date" value={formatLongDate(atp.created_at)} />
+                </CardContent>
+              </Card>
 
-                  {/* Location Information with Enhanced Design */}
-                  <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                    <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 rounded-t-lg">
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
-                          <MapPin className="w-6 h-6 text-green-600 dark:text-green-300" />
-                        </div>
-                        Location Details
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-6">
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Address</p>
-                        <div className="space-y-1">
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.address_line1 || "N/A"}
-                          </p>
-                          {atp.area_coordinator_profile?.address_line2 && (
-                            <p className="font-semibold text-slate-900 dark:text-white">
-                              {atp.area_coordinator_profile.address_line2}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">City</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.city || "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">State</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.state || "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">District</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.district || "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Postal Code</p>
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.postal_code || "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Emergency Contact with Enhanced Design */}
-                  <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                    <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900 dark:to-orange-900 rounded-t-lg">
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg">
-                          <Phone className="w-6 h-6 text-amber-600 dark:text-amber-300" />
-                        </div>
-                        Emergency Contact
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-6">
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Contact Name</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {atp.area_coordinator_profile?.emergency_contact_name || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Relationship</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {atp.area_coordinator_profile?.emergency_contact_relationship || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Phone Number</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {atp.area_coordinator_profile?.emergency_contact || "N/A"}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* ID Information with Enhanced Design */}
-                  <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                    <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 rounded-t-lg">
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
-                          <FileText className="w-6 h-6 text-purple-600 dark:text-purple-300" />
-                        </div>
-                        Identification
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-6">
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">ID Proof Type</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {atp.area_coordinator_profile?.id_proof_type || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">ID Proof Number</p>
-                        <p className="font-semibold text-slate-900 dark:text-white font-mono">
-                          {atp.area_coordinator_profile?.id_proof_number || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">PAN Card Number</p>
-                        <p className="font-semibold text-slate-900 dark:text-white font-mono">
-                          {atp.area_coordinator_profile?.pancard_number || "N/A"}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              {/* Enhanced Documents Tab */}
-              <TabsContent value="documents" className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
-                              <Eye className="w-5 h-5 text-green-600 dark:text-green-300" />
-                            </div>
-                            <h4 className="font-bold text-lg">Passport Size Photo</h4>
-                          </div>
-                          {renderDocumentViewAction(
-                            atp.area_coordinator_profile?.passport_size_photo,
-                            "Passport Size Photo"
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                              <Download className="w-5 h-5 text-blue-600 dark:text-blue-300" />
-                            </div>
-                            <h4 className="font-bold text-lg">ID Proof Document</h4>
-                          </div>
-                          {renderDocumentViewAction(
-                            atp.area_coordinator_profile?.id_proof_document,
-                            "ID Proof Document"
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+              {/* Location Details */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    Location Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <InfoItem 
+                    icon={<Home className="w-4 h-4" />} 
+                    label="Address" 
+                    value={
+                      <>
+                        {atp.area_coordinator_profile?.address_line1 || "N/A"}
+                        {atp.area_coordinator_profile?.address_line2 && (
+                          <span className="text-muted-foreground">, {atp.area_coordinator_profile.address_line2}</span>
+                        )}
+                      </>
+                    } 
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <InfoItem icon={<MapPin className="w-4 h-4" />} label="City" value={atp.area_coordinator_profile?.city} />
+                    <InfoItem icon={<MapPin className="w-4 h-4" />} label="State" value={atp.area_coordinator_profile?.state} />
                   </div>
-                  
-                  <div className="space-y-6">
-                    <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
-                              <Download className="w-5 h-5 text-purple-600 dark:text-purple-300" />
-                            </div>
-                            <h4 className="font-bold text-lg">Address Proof Document</h4>
-                          </div>
-                          {renderDocumentViewAction(
-                            atp.area_coordinator_profile?.address_proof_document,
-                            "Address Proof Document"
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900 dark:to-orange-900">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg">
-                              <Eye className="w-5 h-5 text-amber-600 dark:text-amber-300" />
-                            </div>
-                            <h4 className="font-bold text-lg">PAN Card</h4>
-                          </div>
-                          {renderDocumentViewAction(
-                            atp.area_coordinator_profile?.id_proof_document,
-                            "PAN Card"
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                  <div className="grid grid-cols-2 gap-4">
+                    <InfoItem icon={<MapPin className="w-4 h-4" />} label="District" value={atp.area_coordinator_profile?.district} />
+                    <InfoItem icon={<MapPin className="w-4 h-4" />} label="Postal Code" value={atp.area_coordinator_profile?.postal_code} />
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Emergency Contact */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-primary" />
+                    Emergency Contact
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <InfoItem icon={<Users className="w-4 h-4" />} label="Contact Name" value={atp.area_coordinator_profile?.emergency_contact_name} />
+                  <InfoItem icon={<Briefcase className="w-4 h-4" />} label="Relationship" value={atp.area_coordinator_profile?.emergency_contact_relationship} />
+                  <InfoItem icon={<Phone className="w-4 h-4" />} label="Phone Number" value={atp.area_coordinator_profile?.emergency_contact} />
+                </CardContent>
+              </Card>
+
+              {/* Identification */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    Identification
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <InfoItem icon={<FileText className="w-4 h-4" />} label="ID Proof Type" value={atp.area_coordinator_profile?.id_proof_type} />
+                  <InfoItem icon={<Shield className="w-4 h-4" />} label="ID Proof Number" value={<span className="font-mono">{atp.area_coordinator_profile?.id_proof_number || "N/A"}</span>} />
+                  <InfoItem icon={<CreditCard className="w-4 h-4" />} label="PAN Card Number" value={<span className="font-mono">{atp.area_coordinator_profile?.pancard_number || "N/A"}</span>} />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents" className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {renderDocumentCard(atp.area_coordinator_profile?.passport_size_photo, "Passport Size Photo", <Users className="w-4 h-4" />)}
+              {renderDocumentCard(atp.area_coordinator_profile?.id_proof_document, "ID Proof Document", <FileText className="w-4 h-4" />)}
+              {renderDocumentCard(atp.area_coordinator_profile?.address_proof_document, "Address Proof Document", <Home className="w-4 h-4" />)}
+              {renderDocumentCard(atp.area_coordinator_profile?.id_proof_document, "PAN Card", <CreditCard className="w-4 h-4" />)}
+            </div>
+          </TabsContent>
+
+          {/* Banking Tab */}
+          <TabsContent value="banking" className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-primary" />
+                    Bank Account Details
+                  </CardTitle>
+                  <Badge 
+                    variant="outline"
+                    className={cn(
+                      "gap-1 text-xs",
+                      atp.area_coordinator_profile?.bank_details?.is_verified 
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                    )}
+                  >
+                    {atp.area_coordinator_profile?.bank_details?.is_verified 
+                      ? <><CheckCircle2 className="w-3 h-3" /> Verified</>
+                      : <><Clock className="w-3 h-3" /> Pending</>
+                    }
+                  </Badge>
                 </div>
-              </TabsContent>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <InfoItem icon={<Building className="w-4 h-4" />} label="Bank Name" value={atp.area_coordinator_profile?.bank_details?.bank_name} />
+                  <InfoItem icon={<Users className="w-4 h-4" />} label="Account Holder" value={atp.area_coordinator_profile?.bank_details?.account_holder_name} />
+                  <InfoItem 
+                    icon={<CreditCard className="w-4 h-4" />} 
+                    label="Account Number" 
+                    value={
+                      atp.area_coordinator_profile?.bank_details?.account_number 
+                        ? <span className="font-mono">••••{atp.area_coordinator_profile.bank_details.account_number.slice(-4)}</span>
+                        : "N/A"
+                    } 
+                  />
+                  <InfoItem icon={<Shield className="w-4 h-4" />} label="IFSC Code" value={<span className="font-mono">{atp.area_coordinator_profile?.bank_details?.ifsc_code || "N/A"}</span>} />
+                  <InfoItem icon={<MapPin className="w-4 h-4" />} label="Branch Name" value={atp.area_coordinator_profile?.bank_details?.branch_name} />
+                  <InfoItem icon={<Briefcase className="w-4 h-4" />} label="Account Type" value={atp.area_coordinator_profile?.bank_details?.account_type} />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              {/* Enhanced Banking Tab */}
-              <TabsContent value="banking" className="space-y-8">
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-t-lg">
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                        <CreditCard className="w-7 h-7 text-slate-600 dark:text-slate-300" />
-                      </div>
-                      Bank Account Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-6">
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Bank Name</p>
-                          <p className="font-bold text-base text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.bank_details?.bank_name || "N/A"}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Account Holder Name</p>
-                          <p className="font-bold text-lg text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.bank_details?.account_holder_name || "N/A"}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Account Number</p>
-                          <p className="font-bold text-lg text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.bank_details?.account_number 
-                              ? `••••••••••••${atp.area_coordinator_profile.bank_details.account_number.slice(-4)}`
-                              : "N/A"
-                            }
-                          </p>
-                        </div>
-                      </div>
-                      <div className="space-y-6">
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">IFSC Code</p>
-                          <p className="font-bold text-base text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.bank_details?.ifsc_code || "N/A"}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Branch Name</p>
-                          <p className="font-bold text-lg text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.bank_details?.branch_name || "N/A"}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Account Type</p>
-                          <p className="font-bold text-lg text-slate-900 dark:text-white">
-                            {atp.area_coordinator_profile?.bank_details?.account_type || "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-8 flex justify-center">
-                      <Badge 
-                        variant={atp.area_coordinator_profile?.bank_details?.is_verified ? "default" : "secondary"}
-                        className="px-4 py-2 text-lg"
-                      >
-                        {atp.area_coordinator_profile?.bank_details?.is_verified ? "✓ Verified" : "⏳ Pending Verification"}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+          {/* Hosts Tab */}
+          <TabsContent value="hosts" className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Building className="w-4 h-4 text-primary" />
+                    Hosts Onboarded
+                  </CardTitle>
+                  <Badge variant="secondary" className="text-xs">{mockHostsOnboarded.length} Hosts</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="text-xs font-semibold">Host Name</TableHead>
+                      <TableHead className="text-xs font-semibold">Location</TableHead>
+                      <TableHead className="text-xs font-semibold text-center">Properties</TableHead>
+                      <TableHead className="text-xs font-semibold">Status</TableHead>
+                      <TableHead className="text-xs font-semibold">Join Date</TableHead>
+                      <TableHead className="w-8"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {mockHostsOnboarded.map((host) => (
+                      <TableRow key={host.id} className="group cursor-pointer">
+                        <TableCell className="text-sm font-medium">{host.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{host.location}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary" className="text-xs font-mono">{host.properties}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline"
+                            className={cn(
+                              "text-xs",
+                              host.status === "Active" 
+                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                            )}
+                          >
+                            {host.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(host.joinDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </TableCell>
+                        <TableCell>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              {/* Enhanced Hosts Tab */}
-              <TabsContent value="hosts" className="space-y-8">
-                <Card className="border-0 shadow-lg overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                        <Building className="w-7 h-7 text-slate-600 dark:text-slate-300" />
-                      </div>
-                      Hosts Onboarded
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader className="bg-slate-50 dark:bg-slate-800">
-                          <TableRow>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Host Name</TableHead>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Location</TableHead>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Properties</TableHead>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Status</TableHead>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Join Date</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {mockHostsOnboarded.map((host) => (
-                            <TableRow key={host.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
-                              <TableCell className="font-bold text-slate-900 dark:text-white">{host.name}</TableCell>
-                              <TableCell className="text-slate-600 dark:text-slate-300">{host.location}</TableCell>
-                              <TableCell className="font-semibold text-blue-600 dark:text-blue-400">{host.properties}</TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant={host.status === "Active" ? "default" : "secondary"}
-                                  className="font-semibold"
-                                >
-                                  {host.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-slate-600 dark:text-slate-300">
-                                {new Date(host.joinDate).toLocaleDateString()}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+          {/* Earnings Tab */}
+          <TabsContent value="earnings" className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Card className="bg-emerald-50/50 border-emerald-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
+                      <TrendingUp className="w-4 h-4" />
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total Earnings</p>
+                      <p className="text-lg font-bold text-emerald-700">₹{totalEarnings.toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-blue-50/50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total Commission</p>
+                      <p className="text-lg font-bold text-blue-700">₹{mockEarnings.reduce((a, e) => a + e.commission, 0).toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-amber-50/50 border-amber-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total Bonus</p>
+                      <p className="text-lg font-bold text-amber-700">₹{mockEarnings.reduce((a, e) => a + e.bonus, 0).toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-              {/* Enhanced Earnings Tab */}
-              <TabsContent value="earnings" className="space-y-8">
-                <Card className="border-0 shadow-lg overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900 dark:to-green-900">
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 bg-emerald-100 dark:bg-emerald-800 rounded-lg">
-                        <TrendingUp className="w-7 h-7 text-emerald-600 dark:text-emerald-300" />
-                      </div>
-                      Earnings & Ledgers
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader className="bg-emerald-50 dark:bg-emerald-900">
-                          <TableRow>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Month</TableHead>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Commission</TableHead>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Bonus</TableHead>
-                            <TableHead className="font-bold text-slate-900 dark:text-white">Total Earned</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {mockEarnings.map((earning, index) => (
-                            <TableRow key={index} className="hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                              <TableCell className="font-bold text-slate-900 dark:text-white">{earning.month}</TableCell>
-                              <TableCell className="font-semibold text-green-600 dark:text-green-400">
-                                ₹{earning.commission.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="font-semibold text-blue-600 dark:text-blue-400">
-                                ₹{earning.bonus.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="font-bold text-lg text-emerald-600 dark:text-emerald-400">
-                                ₹{earning.total.toLocaleString()}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  Earnings History
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="text-xs font-semibold">Month</TableHead>
+                      <TableHead className="text-xs font-semibold text-right">Commission</TableHead>
+                      <TableHead className="text-xs font-semibold text-right">Bonus</TableHead>
+                      <TableHead className="text-xs font-semibold text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {mockEarnings.map((earning, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="text-sm font-medium">{earning.month}</TableCell>
+                        <TableCell className="text-sm text-right font-mono text-emerald-600">₹{earning.commission.toLocaleString('en-IN')}</TableCell>
+                        <TableCell className="text-sm text-right font-mono text-blue-600">₹{earning.bonus.toLocaleString('en-IN')}</TableCell>
+                        <TableCell className="text-sm text-right font-mono font-semibold">₹{earning.total.toLocaleString('en-IN')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              {/* Enhanced Training Tab */}
-              <TabsContent value="training" className="space-y-8">
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900">
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 bg-purple-100 dark:bg-purple-800 rounded-lg">
-                        <GraduationCap className="w-7 h-7 text-purple-600 dark:text-purple-300" />
-                      </div>
-                      Training Progress
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-8">
-                    <div className="space-y-8">
-                      {mockTrainingModules.map((module, index) => (
-                        <Card key={index} className="border-0 shadow-sm bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
-                          <CardContent className="p-6">
-                            <div className="space-y-4">
-                              <div className="flex justify-between items-center">
-                                <h4 className="font-bold text-lg text-slate-900 dark:text-white">{module.module}</h4>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                                    {module.progress}%
-                                  </span>
-                                  {module.progress === 100 && (
-                                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                      <Check className="w-4 h-4 text-white" />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <Progress 
-                                value={module.progress} 
-                                className="h-3 bg-slate-200 dark:bg-slate-700"
-                              />
-                              {module.completedDate && (
-                                <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
-                                  ✓ Completed on {formatLongDate(module.completedDate)}
-                                </p>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+          {/* Training Tab */}
+          <TabsContent value="training" className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Card className="bg-emerald-50/50 border-emerald-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
+                      <BookOpen className="w-4 h-4" />
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Completed</p>
+                      <p className="text-lg font-bold text-emerald-700">{completedModules}/{mockTrainingModules.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-blue-50/50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Overall Progress</p>
+                      <p className="text-lg font-bold text-blue-700">{overallProgress}%</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-amber-50/50 border-amber-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">In Progress</p>
+                      <p className="text-lg font-bold text-amber-700">{mockTrainingModules.filter(m => m.progress > 0 && m.progress < 100).length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  Training Modules
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {mockTrainingModules.map((module, index) => (
+                  <div 
+                    key={index} 
+                    className={cn(
+                      "rounded-lg border p-4",
+                      module.progress === 100 ? "bg-emerald-50/50 border-emerald-200" : "bg-muted/30"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+                          module.progress === 100 
+                            ? "bg-emerald-500 text-white"
+                            : module.progress > 0 
+                              ? "bg-amber-500 text-white"
+                              : "bg-muted text-muted-foreground"
+                        )}>
+                          {module.progress === 100 ? <Check className="w-3.5 h-3.5" /> : index + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{module.module}</p>
+                          {module.completedDate && (
+                            <p className="text-xs text-emerald-600">Completed {formatLongDate(module.completedDate)}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span className={cn(
+                        "text-sm font-bold",
+                        module.progress === 100 ? "text-emerald-600" : module.progress > 0 ? "text-amber-600" : "text-muted-foreground"
+                      )}>
+                        {module.progress}%
+                      </span>
+                    </div>
+                    <Progress 
+                      value={module.progress} 
+                      className={cn(
+                        "h-1.5",
+                        module.progress === 100 ? "[&>div]:bg-emerald-500" : module.progress > 0 ? "[&>div]:bg-amber-500" : ""
+                      )}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {/* Existing modals remain the same */}
+      {/* Modals */}
       <ConfirmationModal
         isOpen={showApproveModal}
         onClose={() => setShowApproveModal(false)}
@@ -1083,7 +1077,6 @@ export default function AtpAdvancedView() {
         </div>
       </ConfirmationModal>
 
-      {/* Block Confirmation Modal */}
       <ConfirmationModal
         isOpen={showBlockModal}
         onClose={() => setShowBlockModal(false)}
@@ -1099,7 +1092,6 @@ export default function AtpAdvancedView() {
         size="md"
       />
 
-      {/* Unblock Confirmation Modal */}
       <ConfirmationModal
         isOpen={showUnblockModal}
         onClose={() => setShowUnblockModal(false)}
@@ -1115,7 +1107,6 @@ export default function AtpAdvancedView() {
         size="md"
       />
 
-      {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
