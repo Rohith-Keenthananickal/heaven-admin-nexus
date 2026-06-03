@@ -34,45 +34,28 @@ import {
   Hash,
   Loader2,
 } from "lucide-react";
-import { Priority, IssueStatus, SupportTicket, SupportTicketActivity, ActivityType } from "../models/support.models";
+import {
+  Priority,
+  IssueStatus,
+  SupportTicket,
+  SupportTicketActivity,
+  SupportTicketEscalation,
+  ActivityType,
+} from "../models/support.models";
 import { format } from "date-fns";
-import { supportService } from "../services/Support.service";
+import { isApiSuccess, supportService } from "../services/Support.service";
+import { authService } from "@/modules/auth/services/authService";
+import { toast } from "sonner";
+import {
+  SupportTicketActionDialogs,
+  TicketActionType,
+} from "./SupportTicketActionDialogs";
 
-
-
-// Mock comments
-const mockComments = [
-  {
-    id: 1,
-    content: "Guest mentioned the issue started after midnight. Please check if this affects other rooms on the same floor.",
-    created_by: "Sarah Operations",
-    created_at: "2024-12-14T10:40:00Z",
-  },
-  {
-    id: 2,
-    content: "Checked rooms 301 and 303. They seem to be working fine. Issue is isolated to room 302.",
-    created_by: "John Maintenance",
-    created_at: "2024-12-14T11:45:00Z",
-  },
-  {
-    id: 3,
-    content: "Guest has been offered a complimentary upgrade to room 405 while we fix this issue.",
-    created_by: "Lisa Front Desk",
-    created_at: "2024-12-14T12:15:00Z",
-  },
-];
-
-// Mock escalations
-const mockEscalations = [
-  {
-    id: 1,
-    escalated_to: "Mike Senior Manager",
-    escalated_by: "Sarah Operations",
-    reason: "High priority issue not resolved within SLA. Guest satisfaction at risk.",
-    level: 1,
-    created_at: "2024-12-14T12:00:00Z",
-  },
-];
+const escalationLevelLabels: Record<string, string> = {
+  LEVEL_1: "Level 1",
+  LEVEL_2: "Level 2",
+  LEVEL_3: "Level 3",
+};
 
 // Helper function to determine file type from filename
 const getFileTypeFromName = (filename: string): "image" | "video" | "document" => {
@@ -86,18 +69,31 @@ const getFileTypeFromName = (filename: string): "image" | "video" | "document" =
   return "document";
 };
 
-// Helper function to convert ticket attachments to display format
+const getFileNameFromUrl = (url: string): string => {
+  try {
+    const pathname = new URL(url).pathname;
+    return decodeURIComponent(pathname.split("/").pop() || url);
+  } catch {
+    return url.split("/").pop() || url;
+  }
+};
+
+// Helper function to convert ticket attachment URLs to display format
 const formatAttachments = (attachments: string[] | null | undefined, createdBy: string | null | undefined, createdAt: string | null | undefined) => {
   if (!attachments || attachments.length === 0) {
     return [];
   }
-  return attachments.map((name) => ({
-    name: name || "Unknown",
-    type: getFileTypeFromName(name || ""),
-    size: "N/A", // Size not available from API
-    uploaded_by: createdBy || "Unknown",
-    uploaded_at: createdAt || new Date().toISOString(),
-  }));
+  return attachments.map((url) => {
+    const name = getFileNameFromUrl(url);
+    return {
+      url,
+      name,
+      type: getFileTypeFromName(name),
+      size: "N/A",
+      uploaded_by: createdBy || "Unknown",
+      uploaded_at: createdAt || new Date().toISOString(),
+    };
+  });
 };
 
 const getPriorityBadge = (priority: Priority) => {
@@ -106,7 +102,6 @@ const getPriorityBadge = (priority: Priority) => {
     MEDIUM: { className: "bg-info/10 text-info border-info/20", label: "Medium Priority" },
     HIGH: { className: "bg-warning/10 text-warning border-warning/20", label: "High Priority" },
     URGENT: { className: "bg-destructive/10 text-destructive border-destructive/20", label: "Urgent" },
-    CRITICAL: { className: "bg-destructive/10 text-destructive border-destructive/20", label: "Critical" },
   };
   return config[priority] || config.MEDIUM;
 };
@@ -116,7 +111,6 @@ const getStatusBadge = (status: IssueStatus) => {
     OPEN: { icon: AlertCircle, className: "bg-warning/10 text-warning border-warning/20", label: "Open" },
     IN_PROGRESS: { icon: Clock, className: "bg-info/10 text-info border-info/20", label: "In Progress" },
     ESCALATED: { icon: TrendingUp, className: "bg-destructive/10 text-destructive border-destructive/20", label: "Escalated" },
-    RESOLVED: { icon: CheckCircle2, className: "bg-success/10 text-success border-success/20", label: "Resolved" },
     CLOSED: { icon: XCircle, className: "bg-muted text-muted-foreground", label: "Closed" },
   };
   return config[status] || config.OPEN;
@@ -180,6 +174,7 @@ const getInitials = (name: string | null | undefined): string => {
 
 // Attachment Thumbnail Component
 interface AttachmentFile {
+  url: string;
   name: string;
   type: "image" | "video" | "document";
   size: string;
@@ -187,25 +182,39 @@ interface AttachmentFile {
   uploaded_at: string;
 }
 
-const AttachmentThumbnail = ({ file, index }: { file: AttachmentFile; index: number }) => {
+const AttachmentThumbnail = ({ file }: { file: AttachmentFile }) => {
   const [imageError, setImageError] = useState(false);
 
   if (file.type === "image" && !imageError) {
     return (
       <div className="aspect-square relative bg-muted/30 group/thumb">
         <img
-          src={`https://picsum.photos/200/200?random=${index}`}
+          src={file.url}
           alt={file.name}
           className="w-full h-full object-cover"
           onError={() => setImageError(true)}
         />
         <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover/thumb:opacity-100">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 bg-background/80 hover:bg-background">
-              <Eye className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 bg-background/80 hover:bg-background"
+              asChild
+            >
+              <a href={file.url} target="_blank" rel="noopener noreferrer">
+                <Eye className="h-4 w-4" />
+              </a>
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 bg-background/80 hover:bg-background">
-              <Download className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 bg-background/80 hover:bg-background"
+              asChild
+            >
+              <a href={file.url} download={file.name}>
+                <Download className="h-4 w-4" />
+              </a>
             </Button>
           </div>
         </div>
@@ -217,11 +226,15 @@ const AttachmentThumbnail = ({ file, index }: { file: AttachmentFile; index: num
     <div className="aspect-square flex flex-col items-center justify-center p-4 bg-muted/30">
       <div className="mb-2">{getFileIcon(file.type)}</div>
       <div className="flex items-center gap-2 mt-auto">
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Eye className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <a href={file.url} target="_blank" rel="noopener noreferrer">
+            <Eye className="h-4 w-4" />
+          </a>
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Download className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <a href={file.url} download={file.name}>
+            <Download className="h-4 w-4" />
+          </a>
         </Button>
       </div>
     </div>
@@ -235,69 +248,147 @@ export function SupportTicketAdvancedView() {
   const [activeTab, setActiveTab] = useState("overview");
   const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [activities, setActivities] = useState<SupportTicketActivity[]>([]);
+  const [escalations, setEscalations] = useState<SupportTicketEscalation[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingActivities, setLoadingActivities] = useState(false);
+  const [loadingEscalations, setLoadingEscalations] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [activeAction, setActiveAction] = useState<TicketActionType>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch ticket data
+  const issueId = id ? Number(id) : null;
+
+  const fetchTicket = async () => {
+    if (!issueId) {
+      setError("Ticket ID is required");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await supportService.getSupportTicketById(issueId);
+
+      if (isApiSuccess(response.status) && response.data) {
+        setTicket(response.data);
+      } else {
+        setError(response.errMessage || "Failed to fetch ticket");
+      }
+    } catch (err) {
+      console.error("Error fetching ticket:", err);
+      setError("An error occurred while fetching the ticket");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchActivities = async () => {
+    if (!issueId) return;
+
+    try {
+      setLoadingActivities(true);
+      const response = await supportService.getSupportTicketActivities(issueId);
+
+      if (isApiSuccess(response.status) && response.data) {
+        setActivities(response.data);
+      }
+    } catch (err) {
+      console.error("Error fetching activities:", err);
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
+
+  const fetchEscalations = async () => {
+    if (!issueId) return;
+
+    try {
+      setLoadingEscalations(true);
+      const response = await supportService.getSupportTicketEscalations(issueId);
+
+      if (isApiSuccess(response.status) && response.data) {
+        setEscalations(response.data);
+      }
+    } catch (err) {
+      console.error("Error fetching escalations:", err);
+    } finally {
+      setLoadingEscalations(false);
+    }
+  };
+
+  const refreshTicketData = async () => {
+    await Promise.all([fetchTicket(), fetchActivities(), fetchEscalations()]);
+  };
+
   useEffect(() => {
-    const fetchTicket = async () => {
-      if (!id) {
-        setError("Ticket ID is required");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await supportService.getSupportTicketById(Number(id));
-        
-        if (response.status && response.data) {
-          setTicket(response.data);
-        } else {
-          setError(response.errMessage || "Failed to fetch ticket");
-        }
-      } catch (err) {
-        console.error("Error fetching ticket:", err);
-        setError("An error occurred while fetching the ticket");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTicket();
-  }, [id]);
+  }, [issueId]);
 
-  // Fetch activities when ticket is loaded
   useEffect(() => {
-    const fetchActivities = async () => {
-      if (!id || !ticket) {
-        return;
-      }
-
-      try {
-        setLoadingActivities(true);
-        const response = await supportService.getSupportTicketActivities(Number(id));
-        
-        if (response.status && response.data) {
-          setActivities(response.data);
-        }
-      } catch (err) {
-        console.error("Error fetching activities:", err);
-        // Don't set error state for activities, just log it
-      } finally {
-        setLoadingActivities(false);
-      }
-    };
-
+    if (!ticket || !issueId) return;
     fetchActivities();
-  }, [id, ticket]);
+    fetchEscalations();
+  }, [issueId, ticket?.id]);
 
-  const handleSendComment = () => {
-    if (newComment.trim()) {
-      // Handle sending comment
+  const commentActivities = activities.filter(
+    (a) => a.activity_type === ActivityType.COMMENT_ADDED
+  );
+
+  const handleSendComment = async () => {
+    if (!newComment.trim() || !issueId) return;
+
+    const performedById = authService.getCurrentUserId();
+    if (!performedById) {
+      toast.error("You must be signed in to add a comment");
+      return;
+    }
+
+    setSubmittingComment(true);
+    try {
+      const response = await supportService.createActivity(issueId, {
+        activity_type: ActivityType.COMMENT_ADDED,
+        description: newComment.trim(),
+        performed_by_id: performedById,
+      });
+
+      if (!isApiSuccess(response.status)) {
+        throw new Error(response.errMessage || "Failed to add comment");
+      }
+
       setNewComment("");
+      toast.success("Comment added");
+      await fetchActivities();
+      await fetchTicket();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add comment");
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleUpdateStatus = async (status: IssueStatus, description?: string) => {
+    if (!issueId) return;
+
+    setUpdatingStatus(true);
+    try {
+      const response = await supportService.updateIssueStatus(issueId, {
+        issue_status: status,
+        description: description ?? null,
+        updated_by_id: authService.getCurrentUserId(),
+      });
+
+      if (!isApiSuccess(response.status)) {
+        throw new Error(response.errMessage || "Failed to update status");
+      }
+
+      toast.success("Ticket updated");
+      await refreshTicketData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update ticket");
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -357,11 +448,20 @@ export function SupportTicketAdvancedView() {
             <h1 className="text-xl font-bold text-foreground">{ticket.issue}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="destructive" size="sm">
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={updatingStatus || ticket.issue_status === "CLOSED"}
+              onClick={() => handleUpdateStatus("CLOSED", "Rejected by admin")}
+            >
               <XCircle className="h-4 w-4" />
               Reject
             </Button>
-            <Button size="sm">
+            <Button
+              size="sm"
+              disabled={updatingStatus || ticket.issue_status === "CLOSED"}
+              onClick={() => handleUpdateStatus("CLOSED", "Marked as resolved")}
+            >
               <CheckCircle2 className="h-4 w-4" />
               Mark Resolved
             </Button>
@@ -431,7 +531,7 @@ export function SupportTicketAdvancedView() {
                   <Card className="border-border/50">
                     <CardContent className="p-4 text-center">
                       <Paperclip className="h-6 w-6 text-success mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-foreground">{ticket.attachments.length}</p>
+                      <p className="text-2xl font-bold text-foreground">{ticket.attachments?.length ?? 0}</p>
                       <p className="text-xs text-muted-foreground">Attachments</p>
                     </CardContent>
                   </Card>
@@ -456,12 +556,12 @@ export function SupportTicketAdvancedView() {
                   <CardContent>
                     {ticket.attachments && ticket.attachments.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {formatAttachments(ticket.attachments, ticket.created_by_name, ticket.created_on).map((file, index) => (
+                        {formatAttachments(ticket.attachments, ticket.created_by_name, ticket.created_on).map((file) => (
                           <div
-                            key={index}
+                            key={file.url}
                             className="group relative rounded-lg border border-border/50 hover:border-border transition-colors overflow-hidden"
                           >
-                            <AttachmentThumbnail file={file} index={index} />
+                            <AttachmentThumbnail file={file} />
                             <div className="p-3 bg-background">
                               <p className="font-medium text-sm text-foreground truncate mb-1">{file.name}</p>
                               <p className="text-xs text-muted-foreground truncate">
@@ -539,29 +639,39 @@ export function SupportTicketAdvancedView() {
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[300px] pr-4 mb-4">
-                      <div className="space-y-4">
-                        {mockComments.map((comment) => (
-                          <div key={comment.id} className="flex gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                {comment.created_by
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 bg-muted/30 rounded-lg p-3">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="font-medium text-sm text-foreground">{comment.created_by}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {format(new Date(comment.created_at), "MMM dd 'at' HH:mm")}
-                                </span>
+                      {loadingActivities ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : commentActivities.length > 0 ? (
+                        <div className="space-y-4">
+                          {commentActivities.map((comment) => (
+                            <div key={comment.id} className="flex gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                  {getInitials(comment.performed_by_name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 bg-muted/30 rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="font-medium text-sm text-foreground">
+                                    {comment.performed_by_name || "Unknown"}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(comment.created_at), "MMM dd 'at' HH:mm")}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">{comment.description}</p>
                               </div>
-                              <p className="text-sm text-muted-foreground">{comment.content}</p>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <MessageSquare className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                          <p>No comments yet</p>
+                        </div>
+                      )}
                     </ScrollArea>
                     <Separator className="my-4" />
                     <div className="flex gap-2">
@@ -573,8 +683,15 @@ export function SupportTicketAdvancedView() {
                       />
                     </div>
                     <div className="flex justify-end mt-2">
-                      <Button onClick={handleSendComment} disabled={!newComment.trim()}>
-                        <Send className="h-4 w-4 mr-2" />
+                      <Button
+                        onClick={handleSendComment}
+                        disabled={!newComment.trim() || submittingComment}
+                      >
+                        {submittingComment ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-2" />
+                        )}
                         Send
                       </Button>
                     </div>
@@ -592,25 +709,46 @@ export function SupportTicketAdvancedView() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {mockEscalations.length > 0 ? (
+                    {loadingEscalations ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : escalations.length > 0 ? (
                       <div className="space-y-4">
-                        {mockEscalations.map((escalation) => (
+                        {escalations.map((escalation) => (
                           <div
                             key={escalation.id}
                             className="p-4 rounded-lg border border-destructive/20 bg-destructive/5"
                           >
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center gap-2">
-                                <Badge variant="destructive">Level {escalation.level}</Badge>
+                                <Badge variant="destructive">
+                                  {escalationLevelLabels[escalation.escalation_level] ||
+                                    escalation.escalation_level}
+                                </Badge>
                                 <ArrowUpRight className="h-4 w-4 text-destructive" />
-                                <span className="font-medium text-foreground">{escalation.escalated_to}</span>
+                                <span className="font-medium text-foreground">
+                                  {escalation.escalated_to_name || "Unknown"}
+                                </span>
+                                {escalation.resolved && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Resolved
+                                  </Badge>
+                                )}
                               </div>
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(escalation.created_at), "MMM dd, yyyy 'at' HH:mm")}
                               </span>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-2">{escalation.reason}</p>
-                            <p className="text-xs text-muted-foreground">Escalated by: {escalation.escalated_by}</p>
+                            {escalation.reason && (
+                              <p className="text-sm text-muted-foreground mb-2">{escalation.reason}</p>
+                            )}
+                            {escalation.notes && (
+                              <p className="text-sm text-muted-foreground mb-2">{escalation.notes}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              Escalated by: {escalation.escalated_by_name || "Unknown"}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -687,19 +825,49 @@ export function SupportTicketAdvancedView() {
                 <CardTitle className="text-base">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => setActiveAction("assign")}
+                >
                   <User className="h-4 w-4 mr-2" />
                   Reassign Ticket
                 </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => setActiveAction("status")}
+                >
                   <Clock className="h-4 w-4 mr-2" />
                   Change Status
                 </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => setActiveAction("priority")}
+                >
                   <AlertTriangle className="h-4 w-4 mr-2" />
                   Change Priority
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" size="sm">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => setActiveAction("escalate")}
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Escalate Ticket
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-destructive hover:text-destructive"
+                  size="sm"
+                  disabled={updatingStatus || ticket.issue_status === "CLOSED"}
+                  onClick={() => handleUpdateStatus("CLOSED", "Closed by admin")}
+                >
                   <XCircle className="h-4 w-4 mr-2" />
                   Close Ticket
                 </Button>
@@ -712,19 +880,43 @@ export function SupportTicketAdvancedView() {
                 <CardTitle className="text-base">Contact Reporter</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="ghost" className="w-full justify-start" size="sm">
-                  <Phone className="h-4 w-4 mr-2 text-success" />
-                  +1 234 567 8900
-                </Button>
-                <Button variant="ghost" className="w-full justify-start" size="sm">
-                  <Mail className="h-4 w-4 mr-2 text-primary" />
-                  sarah.guest@email.com
-                </Button>
+                {ticket.phone ? (
+                  <Button variant="ghost" className="w-full justify-start" size="sm" asChild>
+                    <a href={`tel:${ticket.phone}`}>
+                      <Phone className="h-4 w-4 mr-2 text-success" />
+                      {ticket.phone}
+                    </a>
+                  </Button>
+                ) : (
+                  <p className="text-sm text-muted-foreground px-2">No phone on file</p>
+                )}
+                {ticket.email ? (
+                  <Button variant="ghost" className="w-full justify-start" size="sm" asChild>
+                    <a href={`mailto:${ticket.email}`}>
+                      <Mail className="h-4 w-4 mr-2 text-primary" />
+                      {ticket.email}
+                    </a>
+                  </Button>
+                ) : (
+                  <p className="text-sm text-muted-foreground px-2">No email on file</p>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {issueId && ticket && (
+        <SupportTicketActionDialogs
+          issueId={issueId}
+          action={activeAction}
+          currentStatus={ticket.issue_status}
+          currentPriority={ticket.priority}
+          currentAssigneeId={ticket.assigned_to_id}
+          onClose={() => setActiveAction(null)}
+          onSuccess={refreshTicketData}
+        />
+      )}
     </DashboardLayout>
   );
 }

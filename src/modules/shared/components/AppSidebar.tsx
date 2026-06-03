@@ -47,6 +47,7 @@ const navigationItems = [
     submenu: [
       { name: "Dashboard", href: "/atp-dashboard" },
       { name: "Area Coordinators", href: "/area-coordinators" },
+      { name: "ATP Leads", href: "/atp-leads" },
       { name: "Training Modules", href: "/training-modules" },
       { name: "Geo Map", href: "/geo-map" },
     ]

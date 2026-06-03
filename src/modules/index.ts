@@ -5,6 +5,7 @@ export * from './properties';
 export * from './guests';
 export * from './hosts';
 export * from './atp';
+export * from './atp-leads';
 export * from './shared';
 export * from './support';
 

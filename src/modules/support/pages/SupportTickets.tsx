@@ -53,16 +53,15 @@ import {
   IssueStatus,
   TicketType,
   priorityOptions,
-  categoryOptions,
-  typeOptions,
+  listTypeFilterOptions,
   issueStatusOptions,
-  ListSupportTicketsPayload,
+  IssueSearchPayload,
+  CreateIssuePayload,
 } from "../models/support.models";
 import { format } from "date-fns";
 import { CreateTicketModal } from "../components/CreateTicketModal";
-import { supportService } from "../services/Support.service";
+import { isApiSuccess, supportService } from "../services/Support.service";
 import { Pagination as PaginationType } from "@/modules/shared/models/api.models";
-import { CreateIssuePayload } from "../models/support.models";
 import { toast } from "sonner";
 
 
@@ -72,7 +71,6 @@ const getPriorityBadge = (priority: Priority) => {
     MEDIUM: { variant: "secondary" as const, className: "bg-info/10 text-info border-info/20" },
     HIGH: { variant: "secondary" as const, className: "bg-warning/10 text-warning border-warning/20" },
     URGENT: { variant: "destructive" as const, className: "bg-destructive/10 text-destructive border-destructive/20" },
-    CRITICAL: { variant: "destructive" as const, className: "bg-destructive/10 text-destructive border-destructive/20" },
   };
   return config[priority] || config.MEDIUM;
 };
@@ -82,7 +80,6 @@ const getStatusBadge = (status: IssueStatus) => {
     OPEN: { icon: AlertCircle, className: "bg-warning/10 text-warning border-warning/20", label: "Open" },
     IN_PROGRESS: { icon: Clock, className: "bg-info/10 text-info border-info/20", label: "In Progress" },
     ESCALATED: { icon: TrendingUp, className: "bg-destructive/10 text-destructive border-destructive/20", label: "Escalated" },
-    RESOLVED: { icon: CheckCircle2, className: "bg-success/10 text-success border-success/20", label: "Resolved" },
     CLOSED: { icon: XCircle, className: "bg-muted text-muted-foreground", label: "Closed" },
   };
   return config[status] || config.OPEN;
@@ -118,38 +115,31 @@ export function SupportTickets() {
       setLoading(true);
       setError(null);
 
-      // Build payload object with only non-empty values
-      const payload = new ListSupportTicketsPayload();
-      payload.page = currentPage;
-      payload.limit = 10;
-      
-      // Only set non-empty values
-      if (searchQuery && searchQuery.trim()) {
+      const payload: IssueSearchPayload = {
+        page: currentPage,
+        limit: 10,
+      };
+
+      if (searchQuery.trim()) {
         payload.issue = searchQuery.trim();
       }
-      
-      payload.type = 'SUPPORT';
-      
-      if (statusFilter !== "all" && statusFilter) {
+
+      if (typeFilter !== "all") {
+        payload.type = typeFilter as TicketType;
+      }
+
+      if (statusFilter !== "all") {
         payload.issue_status = statusFilter as IssueStatus;
       }
-      
-      if (priorityFilter !== "all" && priorityFilter) {
-        payload.priority = priorityFilter;
+
+      if (priorityFilter !== "all") {
+        payload.priority = priorityFilter as Priority;
       }
-      
-      // Only set if we have actual IDs (not 0) - these would come from filters if needed
-      // For now, we don't set created_by_id, assigned_to_id, or property_id
-      // They will remain undefined in the payload
 
       const response = await supportService.listSupportTickets(payload);
-      
-      if (response.status && response.data) {
-        // Handle the response data - it's an array of SupportTicket arrays
-        const ticketsArray = Array.isArray(response.data) && response.data.length > 0 && Array.isArray(response.data[0])
-          ? response.data.flat()
-          : (Array.isArray(response.data) ? response.data : []);
-        setTickets(ticketsArray as SupportTicket[]);
+
+      if (isApiSuccess(response.status) && response.data) {
+        setTickets(Array.isArray(response.data) ? response.data : []);
         setPagination(response.pagination);
       } else {
         setTickets([]);
@@ -212,7 +202,7 @@ export function SupportTickets() {
 
     const response = await supportService.createSupportTicket(payload);
 
-    if (!response.status) {
+    if (!isApiSuccess(response.status)) {
       throw new Error(response.errMessage || "Failed to create ticket");
     }
 
@@ -313,11 +303,11 @@ export function SupportTickets() {
                 </Select> */}
 
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-[120px]">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
-                    {typeOptions.map((option) => (
+                    {listTypeFilterOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -369,9 +359,9 @@ export function SupportTickets() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {tickets.filter((t) => t.issue_status === "RESOLVED").length}
+                  {tickets.filter((t) => t.issue_status === "CLOSED").length}
                 </p>
-                <p className="text-sm text-muted-foreground">Resolved</p>
+                <p className="text-sm text-muted-foreground">Closed</p>
               </div>
             </CardContent>
           </Card>
@@ -382,9 +372,9 @@ export function SupportTickets() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {tickets.filter((t) => t.priority === "CRITICAL").length}
+                  {tickets.filter((t) => t.priority === "URGENT").length}
                 </p>
-                <p className="text-sm text-muted-foreground">Critical</p>
+                <p className="text-sm text-muted-foreground">Urgent</p>
               </div>
             </CardContent>
           </Card>
@@ -512,7 +502,7 @@ export function SupportTickets() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  {ticket.attachments.length > 0 && (
+                                  {(ticket.attachments?.length ?? 0) > 0 && (
                                     <Paperclip className="h-4 w-4 text-muted-foreground" />
                                   )}
                                   <span className="flex items-center text-xs text-muted-foreground">
@@ -608,10 +598,10 @@ export function SupportTickets() {
                                 <MessageSquare className="h-3 w-3 mr-1" />
                                 {ticket.activities_count} activities
                               </span>
-                              {ticket.attachments.length > 0 && (
+                              {(ticket.attachments?.length ?? 0) > 0 && (
                                 <span className="flex items-center text-xs">
                                   <Paperclip className="h-3 w-3 mr-1" />
-                                  {ticket.attachments.length}
+                                  {ticket.attachments?.length ?? 0}
                                 </span>
                               )}
                             </div>

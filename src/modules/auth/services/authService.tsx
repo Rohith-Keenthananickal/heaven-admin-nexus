@@ -11,7 +11,7 @@ class AuthService {
         return response.data;
     }
 
-    getCurrentUser(): LoginResponse | null {
+    getCurrentUser(): User | null {
         try {
           const user = localStorage.getItem(CURRENT_USER);
           if (!user) return null;
@@ -24,7 +24,8 @@ class AuthService {
 
     getCurrentUserId(): number | undefined {
         const user = this.getCurrentUser();
-        return user?.user_id;
+        console.log("user", user);
+        return user?.id;
     }
 
     async getUserById(id: number): Promise<ApiResponse<User>> {

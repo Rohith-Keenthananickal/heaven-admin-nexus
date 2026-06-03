@@ -1,67 +1,52 @@
-export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' | 'CRITICAL';
-export type TicketStatus = 'ACTIVE' | 'INACTIVE';
-export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'ESCALATED' | 'RESOLVED' | 'CLOSED';
+export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type TicketStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED';
+export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'ESCALATED' | 'CLOSED';
 export type TicketType = 'COMPLAINT' | 'SUPPORT';
-export type Category = 'TECHNICAL_ISSUE' | 'ACCOUNT_ISSUE' | 'PAYMENT_ISSUE' | 'PROPERTY_ISSUE' | 'GUEST_COMPLAINT' | 'MAINTENANCE' | 'OTHER';
-export type UserType = 'ALL' | 'GUEST' | 'STAFF';
+export type IssueSource = 'INTERNAL_UI' | 'EXTERNAL_WEBSITE';
+export type EscalationLevel = 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3';
 
 export interface SupportTicket {
   id: number;
   issue: string;
   issue_code: string;
   type: TicketType;
-  description: string;
-  property_id: number;
-  property_name: string;
-  assigned_to_id: number;
-  assigned_to_name: string;
+  description?: string | null;
+  property_id?: number | null;
+  property_name?: string | null;
+  assigned_to_id?: number | null;
+  assigned_to_name?: string | null;
   created_by_id: number;
-  created_by_name: string;
+  created_by_name?: string | null;
   priority: Priority;
   status: TicketStatus;
   issue_status: IssueStatus;
-  attachments: string[];
+  source?: IssueSource;
+  attachments?: string[] | null;
+  email?: string | null;
+  phone?: string | null;
   activities_count: number;
   escalations_count: number;
   created_on: string;
   updated_at: string;
 }
 
-
-export interface SupportTicketComment {
-  id: number;
-  ticket_id: number;
-  content: string;
-  created_by_name: string;
-  created_at: string;
-}
-
 export interface SupportTicketEscalation {
   id: number;
-  ticket_id: number;
-  escalated_to_name: string;
-  reason: string;
+  issue_id: number;
+  escalation_level: EscalationLevel;
+  reason?: string | null;
+  notes?: string | null;
+  escalated_by_id: number;
+  escalated_by_name?: string | null;
+  escalated_to_id: number;
+  escalated_to_name?: string | null;
+  resolved: boolean;
+  resolved_at?: string | null;
+  resolved_by_id?: number | null;
+  resolved_by_name?: string | null;
   created_at: string;
+  updated_at: string;
 }
-
-// export interface SupportTicketListResponse {
-//   status: string;
-//   data: SupportTicket[];
-//   pagination: {
-//     page: number;
-//     limit: number;
-//     total: number;
-//     total_pages: number;
-//     has_next: boolean;
-//     has_prev: boolean;
-//   };
-// }
-
-// export interface SupportTicketDetailResponse {
-//   status: string;
-//   data: SupportTicket;
-//   message: string;
-// }
 
 export const priorityOptions = [
   { value: 'LOW', label: 'Low' },
@@ -70,20 +55,10 @@ export const priorityOptions = [
   { value: 'URGENT', label: 'Urgent' },
 ];
 
-export const categoryOptions = [
-  { value: 'TECHNICAL_ISSUE', label: 'Technical Issue' },
-  { value: 'ACCOUNT_ISSUE', label: 'Account Issue' },
-  { value: 'PAYMENT_ISSUE', label: 'Payment Issue' },
-  { value: 'PROPERTY_ISSUE', label: 'Property Issue' },
-  { value: 'GUEST_COMPLAINT', label: 'Guest Complaint' },
-  { value: 'MAINTENANCE', label: 'Maintenance' },
-  { value: 'OTHER', label: 'Other' },
-];
-
-export const typeOptions = [
-  { value: 'ALL', label: 'All' },
-  { value: 'GUEST', label: 'Guest' },
-  { value: 'STAFF', label: 'Staff' },
+export const listTypeFilterOptions = [
+  { value: 'all', label: 'All Types' },
+  { value: 'SUPPORT', label: 'Support' },
+  { value: 'COMPLAINT', label: 'Complaint' },
 ];
 
 export const issueStatusOptions = [
@@ -98,7 +73,13 @@ export const ticketTypeOptions = [
   { value: 'SUPPORT', label: 'Support' },
 ];
 
-export class CreateIssuePayload {
+export const escalationLevelOptions = [
+  { value: 'LEVEL_1', label: 'Level 1' },
+  { value: 'LEVEL_2', label: 'Level 2' },
+  { value: 'LEVEL_3', label: 'Level 3' },
+];
+
+export interface CreateIssuePayload {
   issue: string;
   type: TicketType;
   description?: string | null;
@@ -106,36 +87,90 @@ export class CreateIssuePayload {
   assigned_to_id?: number | null;
   priority?: Priority;
   attachments?: string[] | null;
+  email?: string | null;
+  phone?: string | null;
   created_by_id: number;
   issue_status?: IssueStatus;
-  source?: string;
+  source?: IssueSource;
 }
 
-
-export class ListSupportTicketsPayload {
-  page: number
-  limit: number
-  type: TicketType
-  status: string
-  issue_status: IssueStatus
-  priority: string
-  created_by_id: number
-  assigned_to_id: number
-  property_id: number
-  issue: string
+export interface UpdateIssuePayload {
+  issue?: string | null;
+  type?: TicketType | null;
+  description?: string | null;
+  property_id?: number | null;
+  assigned_to_id?: number | null;
+  status?: TicketStatus | null;
+  issue_status?: IssueStatus | null;
+  priority?: Priority | null;
+  attachments?: string[] | null;
+  email?: string | null;
+  phone?: string | null;
+  source?: IssueSource | null;
 }
 
-export class SupportTicketActivity {
-  activity_type: ActivityType
-  description: string
-  old_value: string
-  new_value: string
-  activity_metadata: ActivityMetadata
-  id: number
-  issue_id: number
-  performed_by_id: number
-  performed_by_name: string
-  created_at: string
+export interface IssueSearchPayload {
+  page?: number;
+  limit?: number;
+  type?: TicketType | null;
+  status?: TicketStatus | null;
+  issue_status?: IssueStatus | null;
+  priority?: Priority | null;
+  created_by_id?: number | null;
+  assigned_to_id?: number | null;
+  property_id?: number | null;
+  issue?: string | null;
+  source?: IssueSource | null;
+}
+
+export interface SupportTicketActivity {
+  activity_type: ActivityType;
+  description?: string | null;
+  old_value?: string | null;
+  new_value?: string | null;
+  activity_metadata?: Record<string, unknown> | null;
+  id: number;
+  issue_id: number;
+  performed_by_id: number;
+  performed_by_name?: string | null;
+  created_at: string;
+}
+
+export interface CreateActivityPayload {
+  activity_type: ActivityType;
+  description?: string | null;
+  old_value?: string | null;
+  new_value?: string | null;
+  activity_metadata?: Record<string, unknown> | null;
+  performed_by_id: number;
+}
+
+export interface IssueStatusUpdatePayload {
+  issue_status: IssueStatus;
+  description?: string | null;
+  updated_by_id: number;
+}
+
+export interface IssuePriorityUpdatePayload {
+  priority: Priority;
+}
+
+export interface IssueAssignmentUpdatePayload {
+  assigned_to_id?: number | null;
+}
+
+export interface CreateEscalationPayload {
+  escalation_level: EscalationLevel;
+  reason?: string | null;
+  notes?: string | null;
+  escalated_by_id: number;
+  escalated_to_id: number;
+}
+
+export interface UpdateEscalationPayload {
+  resolved?: boolean | null;
+  notes?: string | null;
+  resolved_by_id?: number | null;
 }
 
 export enum ActivityType {
@@ -150,10 +185,3 @@ export enum ActivityType {
   CLOSED = "CLOSED",
   REOPENED = "REOPENED",
 }
-
-export class ActivityMetadata {
-  additionalProp1: AdditionalProp1
-}
-
-export class AdditionalProp1 {}
-
